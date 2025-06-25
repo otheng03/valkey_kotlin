@@ -1,4 +1,4 @@
-package org.example.config
+package valkey.kotlin.kotlin.config
 
 fun initConfigValues() {
 }

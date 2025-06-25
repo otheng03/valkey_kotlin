@@ -1,8 +1,10 @@
 plugins {
+    application
     kotlin("jvm") version "2.1.20"
 }
 
-group = "org.valkey_kotlin"
+group = "valkey.kotlin_kotlin"
+
 version = "0.1-SNAPSHOT"
 
 repositories {
@@ -16,6 +18,11 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
 kotlin {
     jvmToolchain(17)
+}
+
+application {
+    mainClass.set("valkey.kotlin.kotlin.MainKt")
 }

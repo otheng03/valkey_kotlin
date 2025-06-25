@@ -1,4 +1,4 @@
-package org.example.dict
+package valkey.kotlin.kotlin.dict
 
 data class DictEntry(
     val key: String,

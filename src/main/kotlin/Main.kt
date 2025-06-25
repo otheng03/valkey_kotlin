@@ -1,6 +1,6 @@
-package org.example
+package valkey.kotlin.kotlin
 
-import org.example.config.initServerConfig
+import valkey.kotlin.kotlin.config.initServerConfig
 
 fun main() {
     initServerConfig()

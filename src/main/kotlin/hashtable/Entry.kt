@@ -1,4 +1,4 @@
-package org.example.hashtable
+package valkey.kotlin.kotlin.hashtable
 
 class Entry {
 }
