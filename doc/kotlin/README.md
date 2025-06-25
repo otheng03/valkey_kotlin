@@ -12,3 +12,58 @@ Best used scenarios:
 - Limited class inheritance is desired
 - Type-safe design is required
 - Working with closed APIs
+
+
+# Data class
+
+It is primarily used to hold data.
+
+For each data class, the compiler automatically generates additional member functions.
+
+- equals()
+- hashCode()
+- toString() of the form "ClassName(val name=value)"
+- compoentN() functions corresponding to the properties in their order of declaration.
+- copy()
+
+## Properties declared in the class body
+
+The compiler only uses the properties defined inside the primary constructor for the automatically generated functions
+
+To exclude a property from the generated implementations, declare it inside the class body.
+
+```Kotlin
+data class Person(val name: String) {
+    var age: Int = 0
+}
+
+val person1 = Person("John")
+person1.age = 10
+
+val person2 = Person("John")
+person2.age = 20
+
+// person1 == person2: true
+```
+
+## Copying
+
+Use the copy() function to copy an object, allowing you to alter some of its properties while keeping the reset unchaged.
+
+```Kotlin
+fun copy(name: String = this.name, age: Int = this.age) = User(name, age)
+
+val jack = User(name = "Jack", age = 1)
+val olderJack = jack.copy(age = 2)
+```
+
+## Data classes and destructuring declarations
+
+Component functions generated for data classes make it possible to use them in destructuring declarations:
+
+```Kotlin
+val jane = User("Jane", 35)
+val (name, age) = jane
+println("$name, $age years of age")
+// Jane, 35 years of age
+```
