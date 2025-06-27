@@ -57,5 +57,5 @@ internal val standardConfigs = mapOf(
         default = DEFAULT_SAVE,
         setter = { value -> Server.save = value },
         getter = { Server.save }
-    ),
+    )
 )

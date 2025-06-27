@@ -67,3 +67,7 @@ val (name, age) = jane
 println("$name, $age years of age")
 // Jane, 35 years of age
 ```
+
+# Operators and special symbols
+
+- `?` marks a type as nullable.

@@ -1,7 +1,7 @@
 package valkey.kotlin
 
-import valkey.kotlin.config.initServerConfig
+import com.github.ajalt.clikt.core.main
 
-fun main() {
-    initServerConfig()
+fun main(args: Array<String>) {
+    Valkey().main(args)
 }
