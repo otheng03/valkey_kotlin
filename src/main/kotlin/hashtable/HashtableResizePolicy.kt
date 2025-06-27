@@ -1,4 +1,4 @@
-package valkey.kotlin.kotlin.hashtable
+package valkey.kotlin.hashtable
 
 enum class HashtableResizePolicy {
     HASHTABLE_RESIZE_ALLOW,

@@ -1,6 +1,5 @@
-package valkey.kotlin.kotlin.config
+package valkey.kotlin.config
 
-// This function will be replaced with init constructor of Option objects
 fun initConfigValues() {
 }
 

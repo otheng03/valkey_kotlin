@@ -1,4 +1,4 @@
-package valkey.kotlin.kotlin.hashtable
+package valkey.kotlin.hashtable
 
 interface HashtableType {
     fun entryGetKey(entry: Entry): Entry

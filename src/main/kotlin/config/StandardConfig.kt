@@ -1,68 +1,61 @@
-package valkey.kotlin.kotlin.config
+package valkey.kotlin.config
 
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-internal annotation class Config(val mutable: Boolean)
+import valkey.kotlin.server.Server
 
-internal interface StandardConfig {
-    fun init() {}
-    fun set() {}
-    fun get() {}
-    fun rewrite() {}
+const val DEFAULT_PORT = 6379
+const val DEFAULT_SAVE = ""
+
+internal interface StandardConfig<T> {
+    fun init()
+    fun set(optionValue: String)
+    fun get(): T
 }
 
-@Config(mutable = false)
-internal object Port : StandardConfig {
-    var port: Int = 6379
-
+internal class IntegerConfig(
+    val default: Int,
+    val setter: (Int) -> Unit,
+    val getter: () -> Int,
+) : StandardConfig<Int> {
     override fun init() {
+        setter(default)
     }
 
-    override fun set() {
+    override fun set(optionValue: String) {
+        optionValue.toIntOrNull()?.let { setter(it) }
     }
 
-    override fun get() {
-    }
-
-    override fun rewrite() {
-    }
-}
-
-@Config(mutable = true)
-internal object Save : StandardConfig {
-    var option: String = ""
-
-    override fun init() {
-    }
-
-    override fun set() {
-    }
-
-    override fun get() {
-    }
-
-    override fun rewrite() {
+    override fun get(): Int {
+        return getter()
     }
 }
 
-@Config(mutable = true)
-internal object ServerCPUList : StandardConfig {
+internal class StringConfig(
+    val default: String,
+    val setter: (String) -> Unit,
+    val getter: () -> String,
+) : StandardConfig<String> {
     override fun init() {
+        setter(default)
     }
 
-    override fun set() {
+    override fun set(optionValue: String) {
+        setter(optionValue)
     }
 
-    override fun get() {
-    }
-
-    override fun rewrite() {
+    override fun get(): String {
+        return getter()
     }
 }
 
 internal val standardConfigs = mapOf(
-    "port" to Port,
-    "save" to Save,
-    "server-cpulist" to ServerCPUList,
-    "server_cpulist" to ServerCPUList
+    "port" to IntegerConfig(
+        default = DEFAULT_PORT,
+        setter = { value -> Server.port = value },
+        getter = { Server.port }
+    ),
+    "save" to StringConfig(
+        default = DEFAULT_SAVE,
+        setter = { value -> Server.save = value },
+        getter = { Server.save }
+    ),
 )

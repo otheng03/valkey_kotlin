@@ -1,4 +1,4 @@
-package valkey.kotlin.kotlin.dict
+package valkey.kotlin.dict
 
 interface DictType {
     fun hashFunction(key: String): ULong

@@ -24,5 +24,5 @@ kotlin {
 }
 
 application {
-    mainClass.set("valkey.kotlin.kotlin.MainKt")
+    mainClass.set("valkey.kotlin.MainKt")
 }

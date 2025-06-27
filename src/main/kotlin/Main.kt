@@ -1,6 +1,6 @@
-package valkey.kotlin.kotlin
+package valkey.kotlin
 
-import valkey.kotlin.kotlin.config.initServerConfig
+import valkey.kotlin.config.initServerConfig
 
 fun main() {
     initServerConfig()
