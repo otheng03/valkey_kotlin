@@ -71,3 +71,5 @@ println("$name, $age years of age")
 # Operators and special symbols
 
 - `?` marks a type as nullable.
+- `?.` performs a safe call (calls a method or accesses a property if the receiver is non-nullable)
+- `!!` asserts that an expression is non-nullable

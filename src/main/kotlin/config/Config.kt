@@ -1,7 +1,8 @@
 package valkey.kotlin.config
 
-import com.sun.tools.javac.tree.TreeInfo.args
 import java.io.File
+import kotlin.io.path.Path
+import kotlin.io.path.absolutePathString
 
 fun initConfigValues() {
     standardConfigs.forEach { _, option -> option.init() }
@@ -76,39 +77,17 @@ fun parseArg(arg: String, lenOnly: Boolean = false): Pair<Int, String?> {
     return Pair(i, dst?.toString())
 }
 
-fun splitArgs(line: String): List<String>? {
-    var p = 0
-    val length = line.length
-    val vector = mutableListOf<String>()
-
-    while (p < length) {
-        // Skip blanks
-        while (p < length && line[p].isWhitespace()) p++
-        if (p >= length) break
-
-        val (parsedLen, token) = parseArg(line.substring(p))
-        if (parsedLen > 0 && token != null) {
-            vector.add(token)
-            p += parsedLen
-        } else {
-            // Parsing failed; clean up and return null
-            throw IllegalArgumentException("Failed to parser arg: $line")
-        }
-    }
-
-    return vector
-}
-
 fun loadServerConfigFromString(config: String) {
     config.lines().filter { it.isNotBlank() && !it.startsWith('#') }.forEach { line ->
-        val args = splitArgs(line)
+        val args = line.split(Regex("\\s+"))
         // TODO: Send List<String> to set
-        args?.let { standardConfigs[args[0]]?.set(args[1]) }
+        args.let { standardConfigs[args[0]]?.set(args[1]) }
     }
 }
 
 fun loadServerConfigFromFile(filename: String) {
-    loadServerConfigFromString(File(filename).readText(Charsets.UTF_8))
+    val configString = File(Path(filename).absolutePathString()).readText(Charsets.UTF_8)
+    loadServerConfigFromString(configString)
 }
 
 fun initServerConfig() {
