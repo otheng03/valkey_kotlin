@@ -2,6 +2,7 @@ package valkey.kotlin.database
 
 import valkey.kotlin.hasFlag
 import valkey.kotlin.hashtable.Hashtable
+import java.util.EnumSet
 
 /* The actual Object */
 const val OBJ_STRING = 0 /* String object. */
@@ -84,6 +85,20 @@ data class ServerDb (
     unsigned long expires_cursor;         /* Cursor of the active expire cycle. */
      */
 )
+
+enum class SetKeyProperty {
+    KEEPTTL,
+    NO_SIGNAL,
+    ALREADY_EXIST,
+    DOESNT_EXIST,
+    ADD_OR_UPDATE,
+}
+
+typealias SetKeyProperties = EnumSet<SetKeyProperty>
+
+infix fun SetKeyProperties.allOf(other: SetKeyProperty) = this.toTypedArray()
+infix fun SetKeyProperties.and(other: SetKeyProperty) = SetKeyProperties.of(other, *this.toTypedArray())
+// TODO: Replace SETKEY_* with SetKeyProperty
 
 const val SETKEY_KEEPTTL = 1
 const val SETKEY_NO_SIGNAL = 2
