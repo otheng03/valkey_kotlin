@@ -105,3 +105,33 @@ A brief history of discussion
 - The Kotlin community has been arguing about bitwise operators for ten years.
   - Those who support the idea say that it’s a requirement of their low-level domains – usually, sound or video processing.
   - Those who oppose it put other things as more important and also point out that sometimes the code overcrowded with bitwise symbols is completely unreadable in languages that allow them.
+
+# Function
+
+## Infix notation
+
+`infix` keyword enables a function can also be called using the infix notation(omitting the dot and parentheses for the call).
+Infix function must meet the following requirements:
+- Must be a member functions or extension functions
+- Must have a single parameter
+  - The parameter must not accept variable number arguments and must have no default value.
+
+```Kotlin
+infix fun Int.hasFlag(flag: Int): Boolean = this and flag != 0
+
+if (flags hasFlag SETKEY_ALREADY_EXIST) print("true")
+```
+
+# Convensions
+
+Directory structure
+
+Unlike Java, Kotlin recommends to omit the common root package.
+For example, if all the code in the project is in the org.example.kotlin package and its subpackages,
+files with the org.example.kotlin package should be placed directly under the source root,
+and files in org.example.kotlin.network.socket should be in the network/socket subdirectory of the source root.
+
+```
+/src/main/kotlin (org.example.kotlin)
+/src/main/kotlin/network/socker (org.example.kotlin.network.socket)
+```

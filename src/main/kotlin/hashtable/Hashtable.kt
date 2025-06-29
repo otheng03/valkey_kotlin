@@ -36,5 +36,4 @@ class Hashtable(
     val childBuckets: Array<ULong> = arrayOf(0u, 0u),
     val metadata: Metadata,
 ) {
-
 }

@@ -1,5 +1,8 @@
 package valkey.kotlin.database
 
+import valkey.kotlin.hasFlag
+import valkey.kotlin.hashtable.Hashtable
+
 /* The actual Object */
 const val OBJ_STRING = 0 /* String object. */
 const val OBJ_LIST = 1   /* List object. */
@@ -40,6 +43,60 @@ data class ServerObject (
     val type: UInt,
     val refcount: UInt
 )
+
+data class KVStore (
+    val hashtable: Hashtable
+    /*
+    int flags;
+    hashtableType *dtype;
+    hashtable **hashtables;
+    int num_hashtables;
+    int num_hashtables_bits;
+    list *rehashing;                          /* List of hash tables in this kvstore that are currently rehashing. */
+    int resize_cursor;                        /* Cron job uses this cursor to gradually resize hash tables (only used if num_hashtables > 1). */
+    int allocated_hashtables;                 /* The number of allocated hashtables. */
+    int non_empty_hashtables;                 /* The number of non-empty hashtables. */
+    unsigned long long key_count;             /* Total number of keys in this kvstore. */
+    unsigned long long bucket_count;          /* Total number of buckets in this kvstore across hash tables. */
+    unsigned long long *hashtable_size_index; /* Binary indexed tree (BIT) that describes cumulative key frequencies up until
+                                               * given hashtable-index. */
+    size_t overhead_hashtable_lut;            /* Overhead of all hashtables in bytes. */
+    size_t overhead_hashtable_rehashing;      /* Overhead of hash tables rehashing in bytes. */
+     */
+)
+
+/*
+ * Database representation. There is only one database for simplicity of this toy project.
+ */
+data class ServerDb (
+    val keys: KVStore
+    /*
+    kvstore *keys;                        /* The keyspace for this DB */
+    kvstore *expires;                     /* Timeout of keys with a timeout set */
+    dict *blocking_keys;                  /* Keys with clients waiting for data (BLPOP)*/
+    dict *blocking_keys_unblock_on_nokey; /* Keys with clients waiting for
+                                           * data, and should be unblocked if key is deleted (XREADEDGROUP).
+                                           * This is a subset of blocking_keys*/
+    dict *ready_keys;                     /* Blocked keys that received a PUSH */
+    dict *watched_keys;                   /* WATCHED keys for MULTI/EXEC CAS */
+    int id;                               /* Database ID */
+    long long avg_ttl;                    /* Average TTL, just for stats */
+    unsigned long expires_cursor;         /* Cursor of the active expire cycle. */
+     */
+)
+
+const val SETKEY_KEEPTTL = 1
+const val SETKEY_NO_SIGNAL = 2
+const val SETKEY_ALREADY_EXIST = 4
+const val SETKEY_DOESNT_EXIST = 8
+const val SETKEY_ADD_OR_UPDATE = 16 /* Key most likely doesn't exists */
+fun setKey(flags: Int) {
+    var keyfound = 0
+
+    if (flags hasFlag SETKEY_ALREADY_EXIST) keyfound = 1
+    else if (flags hasFlag SETKEY_ADD_OR_UPDATE) keyfound = -1
+    //else if (!(flags hasFlag SETKEY_DOESNT_EXIST)) keyfound = (lookupKeyWrite(db, key) !== NULL).toInt()
+}
 
 fun lookupKeyWrite(key: String, flags: Int) : ServerObject? {
     return null
