@@ -73,3 +73,35 @@ println("$name, $age years of age")
 - `?` marks a type as nullable.
 - `?.` performs a safe call (calls a method or accesses a property if the receiver is non-nullable)
 - `!!` asserts that an expression is non-nullable
+
+# BitField
+
+kotlin-stdlib/kotlinx.cinterop.internal/CStruct/BitField
+```Kotlin
+@Target(allowedTargets = [AnnotationTarget.PROPERTY_GETTER, AnnotationTarget.PROPERTY_SETTER])
+annotation class BitField(val offset: Long, val size: Int)
+```
+
+Properties
+```Kotlin
+val offset: Long
+val size: Int
+```
+
+Operator
+
+| Operation Name                | Java Operator | Kotlin `Int`\/`Long` Function |
+|-------------------------------|---------------|-------------------------------|
+| Conjunction (and)             | `a & b`       | `a and b`                     |
+| Disjunction (or)              | `a \| b`      | `a or b`                      |
+| Exclusive disjunction (xor)   | `a ^ b`       | `a xor b`                     |
+| Inversion                     | `~a`          | `a.inv()`                     |
+| Shift Left                    | `a << bits`   | `a shl bits`                  |
+| Shift Right                   | `a >> bits`   | `a shr bits`                  |
+| Unsigned Shift Right          | `a >>> bits`  | `a ushr bits`                 |
+
+A brief history of discussion
+
+- The Kotlin community has been arguing about bitwise operators for ten years.
+  - Those who support the idea say that it’s a requirement of their low-level domains – usually, sound or video processing.
+  - Those who oppose it put other things as more important and also point out that sometimes the code overcrowded with bitwise symbols is completely unreadable in languages that allow them.

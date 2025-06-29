@@ -29,6 +29,13 @@ const val LOOKUP_NOEXPIRE = 1 shl 4   // Avoid deleting lazy expired keys
 const val LOOKUP_NOEFFECTS =          // Combination: Avoid any effects from fetching the key
     LOOKUP_NONOTIFY or LOOKUP_NOSTATS or LOOKUP_NOTOUCH or LOOKUP_NOEXPIRE
 
+/*
+ * The original version of Valkey optimizes serverObject using bitfields.
+ * In this Kotlin version, I chose not to use bitfields, mainly for learning purposes.
+ * Since this is just for studying Kotlin, keeping the code simple is good enough.
+ * If I were using Kotlin in production, I might avoid the bitfield approach and focus on clarity rather than compactness.
+ * For low-level memory manipulation, I would likely choose C or C++, as they offer advantages in that area.
+ */
 data class ServerObject (
     val type: UInt,
     val refcount: UInt
