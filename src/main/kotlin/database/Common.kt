@@ -90,12 +90,12 @@ const val SETKEY_NO_SIGNAL = 2
 const val SETKEY_ALREADY_EXIST = 4
 const val SETKEY_DOESNT_EXIST = 8
 const val SETKEY_ADD_OR_UPDATE = 16 /* Key most likely doesn't exists */
-fun setKey(flags: Int) {
+fun setKey(key: String, flags: Int) {
     var keyfound = 0
 
     if (flags hasFlag SETKEY_ALREADY_EXIST) keyfound = 1
     else if (flags hasFlag SETKEY_ADD_OR_UPDATE) keyfound = -1
-    //else if (!(flags hasFlag SETKEY_DOESNT_EXIST)) keyfound = (lookupKeyWrite(db, key) !== NULL).toInt()
+    else if (!(flags hasFlag SETKEY_DOESNT_EXIST)) keyfound = lookupKeyWrite(key)?.let{1} ?: 0
 }
 
 fun lookupKeyWrite(key: String, flags: Int) : ServerObject? {

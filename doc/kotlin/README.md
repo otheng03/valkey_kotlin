@@ -13,7 +13,6 @@ Best used scenarios:
 - Type-safe design is required
 - Working with closed APIs
 
-
 # Data class
 
 It is primarily used to hold data.
@@ -73,6 +72,7 @@ println("$name, $age years of age")
 - `?` marks a type as nullable.
 - `?.` performs a safe call (calls a method or accesses a property if the receiver is non-nullable)
 - `!!` asserts that an expression is non-nullable
+- `===`, `!==` referential equality operators.
 
 # BitField
 
@@ -122,7 +122,54 @@ infix fun Int.hasFlag(flag: Int): Boolean = this and flag != 0
 if (flags hasFlag SETKEY_ALREADY_EXIST) print("true")
 ```
 
-# Convensions
+## Scope function
+
+The Kotlin standard library contains several functions whose sole purpose is to execute a block of code within the context of an object.
+When you call such a function on an object with a lambda expression provided,
+it forms a temporary scope. In this scope, you can access the object without its name.
+Such functions are called scope functions. There are five of them: let, run, with, apply, and also.
+
+Basically, these functions all perform the same action: execute a block of code on an object.
+What's different is how this object becomes available inside the block and what the result of the whole expression is.
+
+### Function selection
+
+| Function | Object reference | Return value     | Is extension function                          |
+|----------|------------------|------------------|------------------------------------------------|
+| `let`    | `it`             | Lambda result    | Yes                                            |
+| `run`    | `this`           | Lambda result    | Yes                                            |
+| `run`    | -                | Lambda result    | No: called without the context object          |
+| `with`   | `this`           | Lambda result    | No: takes the context object as an argument    |
+| `apply`  | `this`           | Context object   | Yes                                            |
+| `also`   | `it`             | Context object   | Yes                                            |
+
+- Executing a lambda on non-nullable objects: let
+- Introducing an expression as a variable in local scope: let
+- Object configuration: apply
+- Object configuration and computing the result: run
+- Running statements where an expression is required: non-extension run
+- Additional effects: also
+- Grouping function calls on an object: with
+
+# Referential equality
+
+Referential equality checks whether two objects are the exact same instance in memory.
+
+```Kotlin
+fun main() {
+    var a = "Hello"
+    var b = a
+    var c = "world"
+    var d = "world"
+
+    println(a === b) // Prints whether a and b are referentially equal. The result is true.
+    println(a === c) // false
+    println(a !== c) // true
+    println(c === d) // true
+}
+```
+
+# Conventions
 
 Directory structure
 
