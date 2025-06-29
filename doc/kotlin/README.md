@@ -67,6 +67,27 @@ println("$name, $age years of age")
 // Jane, 35 years of age
 ```
 
+# Inline value classes
+
+## ✅Definition
+Inline classes are a subset of value-based classes. They don't have an identity and can only hold values.
+
+## ⚠️Problem
+Wrapping a value in a class to create a more domain-specific type introduces runtime overhead due to additional heap allocations
+Moreover, if the wrapped type is primitive, the performance hit is significant, because primitive types are usually heavily optimized by the runtime
+
+## 💡Solution
+To solve such issues, Kotlin introduces a special kind of class called an inline class. 
+
+```Kotlin
+@JvmInline  // For JVM backends
+value class Password(private val s: String)
+
+// No actual instantiation of class 'Password' happens
+// At runtime 'securePassword' contains just 'String'
+val securePassword = Password("Don't try this in production")
+```
+
 # Operators and special symbols
 
 - `?` marks a type as nullable.

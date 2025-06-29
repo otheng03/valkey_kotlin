@@ -90,12 +90,34 @@ const val SETKEY_NO_SIGNAL = 2
 const val SETKEY_ALREADY_EXIST = 4
 const val SETKEY_DOESNT_EXIST = 8
 const val SETKEY_ADD_OR_UPDATE = 16 /* Key most likely doesn't exists */
-fun setKey(key: String, flags: Int) {
-    var keyfound = 0
 
-    if (flags hasFlag SETKEY_ALREADY_EXIST) keyfound = 1
-    else if (flags hasFlag SETKEY_ADD_OR_UPDATE) keyfound = -1
-    else if (!(flags hasFlag SETKEY_DOESNT_EXIST)) keyfound = lookupKeyWrite(key)?.let{1} ?: 0
+fun setKey(key: String, valRef: String, flags: Int) {
+    var keyFound: Int = 0
+
+    if (flags hasFlag SETKEY_ALREADY_EXIST) keyFound = 1
+    else if (flags hasFlag SETKEY_ADD_OR_UPDATE) keyFound = -1
+    else if (!(flags hasFlag SETKEY_DOESNT_EXIST)) keyFound = lookupKeyWrite(key)?.let{1} ?: 0
+
+    when (keyFound) {
+        0 -> dbAdd(key, valRef)
+        -1 -> dbAddInternal(key, valRef, 1)
+        1 -> dbSetValue(key, valRef, 1)
+    }
+
+    if (!(flags hasFlag SETKEY_KEEPTTL)) TODO("Not implemented yet")
+    if (!(flags hasFlag SETKEY_NO_SIGNAL)) TODO("Not implemented yet")
+}
+
+fun dbAdd(key: String, valRef: String) {
+
+}
+
+fun dbAddInternal(key: String, valRef: String, updateifExisting: Int) {
+
+}
+
+fun dbSetValue(key: String, valRef: String, overwrite: Int) {
+
 }
 
 fun lookupKeyWrite(key: String, flags: Int) : ServerObject? {
