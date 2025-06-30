@@ -45,27 +45,6 @@ data class ServerObject (
     val refcount: UInt
 )
 
-data class KVStore (
-    val hashtable: Hashtable
-    /*
-    int flags;
-    hashtableType *dtype;
-    hashtable **hashtables;
-    int num_hashtables;
-    int num_hashtables_bits;
-    list *rehashing;                          /* List of hash tables in this kvstore that are currently rehashing. */
-    int resize_cursor;                        /* Cron job uses this cursor to gradually resize hash tables (only used if num_hashtables > 1). */
-    int allocated_hashtables;                 /* The number of allocated hashtables. */
-    int non_empty_hashtables;                 /* The number of non-empty hashtables. */
-    unsigned long long key_count;             /* Total number of keys in this kvstore. */
-    unsigned long long bucket_count;          /* Total number of buckets in this kvstore across hash tables. */
-    unsigned long long *hashtable_size_index; /* Binary indexed tree (BIT) that describes cumulative key frequencies up until
-                                               * given hashtable-index. */
-    size_t overhead_hashtable_lut;            /* Overhead of all hashtables in bytes. */
-    size_t overhead_hashtable_rehashing;      /* Overhead of hash tables rehashing in bytes. */
-     */
-)
-
 /*
  * Database representation. There is only one database for simplicity of this toy project.
  */
@@ -96,9 +75,7 @@ enum class SetKeyProperty {
 
 typealias SetKeyProperties = EnumSet<SetKeyProperty>
 
-infix fun SetKeyProperties.allOf(other: SetKeyProperty) = this.toTypedArray()
-infix fun SetKeyProperties.and(other: SetKeyProperty) = SetKeyProperties.of(other, *this.toTypedArray())
-// TODO: Replace SETKEY_* with SetKeyProperty
+infix fun SetKeyProperties.hasFlag(other: SetKeyProperty) = this.contains(other)
 
 const val SETKEY_KEEPTTL = 1
 const val SETKEY_NO_SIGNAL = 2
@@ -135,12 +112,22 @@ fun dbSetValue(key: String, valRef: String, overwrite: Int) {
 
 }
 
-fun lookupKeyWrite(key: String, flags: Int) : ServerObject? {
+// TODO : Implement dictIndex
+fun dbFindWithDictIndex(key: String, dictIndex: Int): ServerObject? {
+    val existing = kvstorehashtableFind(dictIndex, key)
+}
+
+fun lookupKey(key: String, flags: Int) : ServerObject? {
+    val dictIndex = getKVStoreIndexForKey(key)
+    val value = dbFindWithDictIndex(key, dictIndex)
+    value?.let { print("haha") } ?: { print("hoho") }
+
     return null
+
 }
 
 fun lookupKeyWriteWithFlags(key: String, flags: Int) : ServerObject? {
-    return lookupKeyWrite(key, flags or LOOKUP_WRITE)
+    return lookupKey(key, flags or LOOKUP_WRITE)
 }
 
 fun lookupKeyWrite(key: String) : ServerObject? {

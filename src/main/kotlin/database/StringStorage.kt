@@ -1,7 +1,10 @@
 package valkey.kotlin.database
 
-fun setGenericCommand() {
-
+// TODO:
+//  Implement expiration mechanisms
+//  Implement flags
+fun setGenericCommand(key: String, value: String) {
+    val existingValue = lookupKeyWrite(key)
 }
 
 fun getGenericCommand() {
