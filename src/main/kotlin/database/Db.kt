@@ -1,7 +1,6 @@
 package valkey.kotlin.database
 
 import valkey.kotlin.hasFlag
-import valkey.kotlin.hashtable.Hashtable
 import java.util.EnumSet
 
 /* The actual Object */
@@ -48,7 +47,7 @@ data class ServerObject (
 /*
  * Database representation. There is only one database for simplicity of this toy project.
  */
-data class ServerDb (
+class ServerDb (
     val keys: KVStore
     /*
     kvstore *keys;                        /* The keyspace for this DB */
@@ -63,7 +62,16 @@ data class ServerDb (
     long long avg_ttl;                    /* Average TTL, just for stats */
     unsigned long expires_cursor;         /* Cursor of the active expire cycle. */
      */
-)
+) {
+    fun kvstoreHashtableFind(dictIndex: Int, key: String): Pair</*hashtableIndex*/ Int, /*found*/ Boolean> {
+        return Pair(0, false)
+    }
+
+    // TODO : Implement dictIndex
+    fun dbFindWithDictIndex(key: String, dictIndex: Int): ServerObject? {
+        val existing = (dictIndex, key)
+    }
+}
 
 enum class SetKeyProperty {
     KEEPTTL,
@@ -112,9 +120,8 @@ fun dbSetValue(key: String, valRef: String, overwrite: Int) {
 
 }
 
-// TODO : Implement dictIndex
-fun dbFindWithDictIndex(key: String, dictIndex: Int): ServerObject? {
-    val existing = kvstorehashtableFind(dictIndex, key)
+fun dbFindWithDictIndex(key: String, didx: Int) : ServerObject? {
+
 }
 
 fun lookupKey(key: String, flags: Int) : ServerObject? {

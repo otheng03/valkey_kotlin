@@ -1,9 +1,5 @@
 package valkey.kotlin.hashtable
 
-const val ENTRIES_PER_BUCKET = 7
-typealias BUCKET_BITS_TYPE  = UByte
-const val BITS_NEEDED_TO_STORE_POS_WITHIN_BUCKET = 3
-
 /*
  * Original Bucket of valkey is optimized to fit within a CPU cache line.
  * In this kotlin toy project, the Bucket implementation is simplified for better understanding and easier understanding.
@@ -32,9 +28,18 @@ const val BITS_NEEDED_TO_STORE_POS_WITHIN_BUCKET = 3
  *     1 bit     7 bits    [1 byte] x 7  [8 bytes] x 7 = 64 bytes
  *     chained   presence  hashes        entries
  */
+
+const val ENTRIES_PER_BUCKET = 7
+typealias BUCKET_BITS_TYPE  = UByte
+const val BITS_NEEDED_TO_STORE_POS_WITHIN_BUCKET = 3
+
 data class HashtableBucket (
-    val chained: UByte,
+    val chained: Boolean,
     val presence: UByte,
-    val hashes: ByteArray = ByteArray(ENTRIES_PER_BUCKET),
+    val hashes: Array<Byte?> = arrayOfNulls(ENTRIES_PER_BUCKET),
     val entries: Array<Any?> = arrayOfNulls(ENTRIES_PER_BUCKET)
-)
+) {
+    fun isPositionFilled(position: Int): Boolean {
+        return presence and ((1 shl position).toUByte()) > 0u
+    }
+}

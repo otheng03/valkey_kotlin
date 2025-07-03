@@ -2,8 +2,8 @@ package valkey.kotlin.database
 
 import valkey.kotlin.hashtable.Hashtable
 
-data class KVStore (
-    val hashtable: Hashtable
+class KVStore (
+    val hashtable: Array<Hashtable>
     /*
     int flags;
     hashtableType *dtype;
@@ -21,19 +21,21 @@ data class KVStore (
     size_t overhead_hashtable_lut;            /* Overhead of all hashtables in bytes. */
     size_t overhead_hashtable_rehashing;      /* Overhead of hash tables rehashing in bytes. */
      */
-)
+) {
+    fun kvstoreGetHashtable(dictIndex: Int): Hashtable? {
+        return hashtable[dictIndex]
+    }
 
+    fun kvstorehashtableFind(dictIndex: Int, key: String): Pair<Hashtable?, /*found*/ Boolean> {
+        val ht: Hashtable? = kvstoreGetHashtable(dictIndex)
+        ht?.let { return Pair(null, false)}
+             ?: { return ht.find(key)}
+    }
+}
+
+// Returns which dict index should be used with kvstore for a given key.
 fun getKVStoreIndexForKey(key: String): Int {
     // TODO: Implement several KVStore for a DB
     return 0
 }
 
-fun kvstoreGetHashtable(dictIndex: Int, key: String): Hashtable? {
-
-}
-
-fun kvstorehashtableFind(dictIndex: Int, key: String): Hashtable? {
-    val ht: Hashtable = kvstoreGetHashtable(dictIndex, key)
-    ht?.let { return null }
-        ?: { return hashtableFind(ht, key)}
-}
