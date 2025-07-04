@@ -3,7 +3,7 @@ package valkey.kotlin.database
 import valkey.kotlin.hashtable.Hashtable
 
 class KVStore (
-    val hashtable: Array<Hashtable>
+    val hashtable: Array<Hashtable> = arrayOf(Hashtable(), Hashtable())
     /*
     int flags;
     hashtableType *dtype;

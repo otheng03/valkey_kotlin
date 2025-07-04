@@ -25,17 +25,30 @@ fun hashtableSetHashFunctionSeed(seed: ByteArray) {
     seed.copyInto(hashFunctionSeed)
 }
 
-open class Hashtable(
-    val instantRehashing: UInt,
-    val rehashIdx: Long,
-    val tables: Array<Array<HashtableBucket?>> = arrayOf(arrayOfNulls(1), arrayOfNulls(1)),
+class Hashtable(
+//    val instantRehashing: UInt,
+    var rehashIdx: Long,
+    val tables: Array<Array<Bucket?>> = arrayOf(emptyArray(), emptyArray()),
     val used: Array<UInt> = arrayOf(0u, 0u),
-    val bucketExponential: Array<Int> = arrayOf(0, 0),
-    val pauseRehash: Short,
-    val pauseAutoShrink: Short,
-    val childBuckets: Array<ULong> = arrayOf(0u, 0u),
-    val metadata: Metadata,
+    val bucketExp: Array<Int> = arrayOf(0, 0),
+//    val pauseRehash: Short,
+//    val pauseAutoShrink: Short,
+//    val childBuckets: Array<ULong> = arrayOf(0u, 0u),
+//    val metadata: Metadata,
 ) {
+    init {
+        rehashIdx = -1
+        for (tableIdx in 0..1) {
+            resetTable(tableIdx)
+        }
+    }
+
+    fun resetTable(tableIdx: Int) {
+        tables[tableIdx] = emptyArray()
+        bucketExp[tableIdx] = -1
+        used[tableIdx] = 0u
+    }
+
     fun size(): UInt {
         return used[0] + used[1]
     }
@@ -53,7 +66,7 @@ open class Hashtable(
         val ret = findBucket(hash, key)
     }
 
-    fun findBucket(hash: ULong, key: String): Pair<HashtableBucket?, Int>? {
+    fun findBucket(hash: ULong, key: String): Pair<Bucket?, Int>? {
         if (size() == 0u)
             return Pair(null, 0)
         val h2 = hash.highBits()
@@ -65,7 +78,7 @@ open class Hashtable(
             if (used[table] == 0u)
                 continue
 
-            val mask: Long = expToMask(bucketExponential[table])
+            val mask: Long = expToMask(bucketExp[table])
             val bucketIdx = hash and mask.toULong() // TODO: Check type safety of toULong
             if (table == 0 && rehashIdx >= 0 && bucketIdx < rehashIdx.toUInt()) {   // TODO: Check type safety of toUInt
                 continue
@@ -82,7 +95,7 @@ open class Hashtable(
         }
     }
 
-    fun numBucketPositions(bucket: HashtableBucket?): Int {
+    fun numBucketPositions(bucket: Bucket?): Int {
         return ENTRIES_PER_BUCKET - (if (bucket?.chained == true) 1 else 0)
     }
 

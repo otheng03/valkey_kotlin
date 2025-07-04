@@ -33,7 +33,7 @@ const val ENTRIES_PER_BUCKET = 7
 typealias BUCKET_BITS_TYPE  = UByte
 const val BITS_NEEDED_TO_STORE_POS_WITHIN_BUCKET = 3
 
-data class HashtableBucket (
+data class Bucket (
     val chained: Boolean,
     val presence: UByte,
     val hashes: Array<Byte?> = arrayOfNulls(ENTRIES_PER_BUCKET),
