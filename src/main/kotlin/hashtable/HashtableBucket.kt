@@ -33,13 +33,35 @@ const val ENTRIES_PER_BUCKET = 7
 typealias BUCKET_BITS_TYPE  = UByte
 const val BITS_NEEDED_TO_STORE_POS_WITHIN_BUCKET = 3
 
-data class Bucket (
+data class HashtableBucket (
     val chained: Boolean,
     val presence: UByte,
-    val hashes: Array<Byte?> = arrayOfNulls(ENTRIES_PER_BUCKET),
+    val hashes: Array<UByte> = arrayOf(0u, 0u, 0u, 0u, 0u, 0u, 0u),
     val entries: Array<Any?> = arrayOfNulls(ENTRIES_PER_BUCKET)
 ) {
     fun isPositionFilled(position: Int): Boolean {
         return presence and ((1 shl position).toUByte()) > 0u
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as HashtableBucket
+
+        if (chained != other.chained) return false
+        if (presence != other.presence) return false
+        if (!hashes.contentEquals(other.hashes)) return false
+        if (!entries.contentEquals(other.entries)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = chained.hashCode()
+        result = 31 * result + presence.hashCode()
+        result = 31 * result + hashes.contentHashCode()
+        result = 31 * result + entries.contentHashCode()
+        return result
     }
 }

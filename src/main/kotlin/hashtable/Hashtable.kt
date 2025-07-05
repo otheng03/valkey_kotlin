@@ -1,5 +1,7 @@
 package valkey.kotlin.hashtable
 
+import valkey.kotlin.types.*
+
 /* --- Global Constants --- */
 
 // bytes, the most common cache line size
@@ -26,15 +28,14 @@ fun hashtableSetHashFunctionSeed(seed: ByteArray) {
 }
 
 class Hashtable(
-//    val instantRehashing: UInt,
-    var rehashIdx: Long,
-    val tables: Array<Array<Bucket?>> = arrayOf(emptyArray(), emptyArray()),
-    val used: Array<UInt> = arrayOf(0u, 0u),
-    val bucketExp: Array<Int> = arrayOf(0, 0),
-//    val pauseRehash: Short,
-//    val pauseAutoShrink: Short,
-//    val childBuckets: Array<ULong> = arrayOf(0u, 0u),
-//    val metadata: Metadata,
+    var rehashIdx: ssize_t,
+    val tables: Array<Array<HashtableBucket?>> = arrayOf(emptyArray(), emptyArray()),
+    val used: Array<size_t> = arrayOf(0u, 0u),
+    val bucketExp: Array<int8_t> = arrayOf(0, 0),
+    val pauseRehash: int16_t,
+    val pauseAutoShrink: int16_t,
+    val childBuckets: Array<size_t> = arrayOf(0u, 0u),
+    val metadata: Metadata,
 ) {
     init {
         rehashIdx = -1
@@ -66,7 +67,7 @@ class Hashtable(
         val ret = findBucket(hash, key)
     }
 
-    fun findBucket(hash: ULong, key: String): Pair<Bucket?, Int>? {
+    fun findBucket(hash: ULong, key: String): Pair<HashtableBucket?, Int>? {
         if (size() == 0u)
             return Pair(null, 0)
         val h2 = hash.highBits()
@@ -87,16 +88,15 @@ class Hashtable(
             do {
                 // Find candidate entries with presence flag set and matching h2 hash.
                 for (pos in 0..numBucketPositions(bucket)) {
-                    if (bucket.isPositionFilled(pos) && bucket.hashes[pos] == h2) {
-
+                    if (bucket?.isPositionFilled(pos) == true && bucket.hashes[pos] == h2) {
                     }
                 }
             } while (bucket != null)
         }
     }
 
-    fun numBucketPositions(bucket: Bucket?): Int {
-        return ENTRIES_PER_BUCKET - (if (bucket?.chained == true) 1 else 0)
+    fun numBucketPositions(hashtableBucket: HashtableBucket?): Int {
+        return ENTRIES_PER_BUCKET - (if (hashtableBucket?.chained == true) 1 else 0)
     }
 
     fun expToMask(exp: Int): Long {
