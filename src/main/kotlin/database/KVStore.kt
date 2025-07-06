@@ -1,9 +1,10 @@
 package valkey.kotlin.database
 
 import valkey.kotlin.hashtable.Hashtable
+import valkey.kotlin.hashtable.KVStoreKeysHashtable
 
 class KVStore (
-    val hashtable: Array<Hashtable> = arrayOf(Hashtable(), Hashtable())
+    val hashtable: Array<Hashtable> = arrayOf(KVStoreKeysHashtable(), KVStoreKeysHashtable())
     /*
     int flags;
     hashtableType *dtype;
@@ -28,8 +29,7 @@ class KVStore (
 
     fun kvstorehashtableFind(dictIndex: Int, key: String): Pair<Hashtable?, /*found*/ Boolean> {
         val ht: Hashtable? = kvstoreGetHashtable(dictIndex)
-        ht?.let { return Pair(null, false)}
-             ?: { return ht.find(key)}
+        return ht?.find(key) ?: Pair(null, false)
     }
 }
 

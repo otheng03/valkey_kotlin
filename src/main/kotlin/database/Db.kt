@@ -69,7 +69,7 @@ class ServerDb (
 
     // TODO : Implement dictIndex
     fun dbFindWithDictIndex(key: String, dictIndex: Int): ServerObject? {
-        val existing = (dictIndex, key)
+        return null
     }
 }
 
@@ -121,7 +121,7 @@ fun dbSetValue(key: String, valRef: String, overwrite: Int) {
 }
 
 fun dbFindWithDictIndex(key: String, didx: Int) : ServerObject? {
-
+    return null
 }
 
 fun lookupKey(key: String, flags: Int) : ServerObject? {
@@ -130,7 +130,6 @@ fun lookupKey(key: String, flags: Int) : ServerObject? {
     value?.let { print("haha") } ?: { print("hoho") }
 
     return null
-
 }
 
 fun lookupKeyWriteWithFlags(key: String, flags: Int) : ServerObject? {

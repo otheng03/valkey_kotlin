@@ -27,18 +27,24 @@ fun hashtableSetHashFunctionSeed(seed: ByteArray) {
     seed.copyInto(hashFunctionSeed)
 }
 
-class Hashtable(
-    var rehashIdx: ssize_t,
+fun ULong.highBits(): UByte {
+    val CHAR_BIT = 8
+    return (this shr (CHAR_BIT * 7)).toUByte()
+}
+
+abstract class Hashtable(
+    var rehashIdx: ssize_t = -1,
     val tables: Array<Array<HashtableBucket?>> = arrayOf(emptyArray(), emptyArray()),
     val used: Array<size_t> = arrayOf(0u, 0u),
     val bucketExp: Array<int8_t> = arrayOf(0, 0),
-    val pauseRehash: int16_t,
-    val pauseAutoShrink: int16_t,
-    val childBuckets: Array<size_t> = arrayOf(0u, 0u),
-    val metadata: Metadata,
+    //val pauseRehash: int16_t,
+    //val pauseAutoShrink: int16_t,
+    //val childBuckets: Array<size_t> = arrayOf(0u, 0u),
+    //val metadata: Metadata,
+    // From hashtableType
+    var instantRehashing: UInt = 0u
 ) {
     init {
-        rehashIdx = -1
         for (tableIdx in 0..1) {
             resetTable(tableIdx)
         }
@@ -50,7 +56,7 @@ class Hashtable(
         used[tableIdx] = 0u
     }
 
-    fun size(): UInt {
+    fun size(): size_t {
         return used[0] + used[1]
     }
 
@@ -60,15 +66,17 @@ class Hashtable(
     }
 
     fun find(key: String): Pair<Hashtable?, /*found*/ Boolean> {
-        if (size() == 0u)
+        if (size() == 0uL)
             return Pair(null, false)
         val hash = hashKey(key)
         val posInBucket = 0
         val ret = findBucket(hash, key)
+        // TODO
+        return Pair(null, false)
     }
 
     fun findBucket(hash: ULong, key: String): Pair<HashtableBucket?, Int>? {
-        if (size() == 0u)
+        if (size() == 0uL)
             return Pair(null, 0)
         val h2 = hash.highBits()
         var table: Int
@@ -76,10 +84,10 @@ class Hashtable(
         // TODO: this.rehashStepOnReadIfNeeded()
 
         for (table in 0..1) {
-            if (used[table] == 0u)
+            if (used[table] == 0uL)
                 continue
 
-            val mask: Long = expToMask(bucketExp[table])
+            val mask: Long = expToMask(bucketExp[table].toInt())
             val bucketIdx = hash and mask.toULong() // TODO: Check type safety of toULong
             if (table == 0 && rehashIdx >= 0 && bucketIdx < rehashIdx.toUInt()) {   // TODO: Check type safety of toUInt
                 continue
@@ -93,6 +101,8 @@ class Hashtable(
                 }
             } while (bucket != null)
         }
+        // TODO
+        return null
     }
 
     fun numBucketPositions(hashtableBucket: HashtableBucket?): Int {
@@ -106,9 +116,82 @@ class Hashtable(
     fun numBuckets(exp: Int): Long {
         return if (exp == -1) 0L else 1L shl exp
     }
+
+    abstract fun entryGetKey(entry: Entry): String
+    abstract fun hashFunction(key: String): uint64_t
+    abstract fun keyCompare(key1: String, key2: String): Int
+    abstract fun resizeAllowed(moreMem: size_t, usedRatio: Double): Int
+    abstract fun getMetadataSize(): size_t
+
+    open fun entryDestructor(entry: Entry) {
+        // Do nothing
+    }
+
+    open fun entryPrefetchValue(entry: Entry) {
+        // Do nothing
+    }
+
+    open fun rehashingStarted(ht: Hashtable) {
+        // Do nothing
+    }
+
+    open fun rehashingCompleted(ht: Hashtable) {
+        // Do nothing
+    }
+
+    open fun trackMemUsage(ht: Hashtable, delta: ssize_t) {
+        // Do nothing
+    }
 }
 
-fun ULong.highBits(): UByte {
-    val CHAR_BIT = 8
-    return (this shr (CHAR_BIT * 7)).toUByte()
+class KVStoreKeysHashtable : Hashtable() {
+    override fun entryGetKey(entry: Entry): String {
+        //hashtableObjectGetKey
+        TODO("Not yet implemented")
+    }
+
+    override fun hashFunction(key: String): uint64_t {
+        //hashtableSdsHash
+        TODO("Not yet implemented")
+    }
+
+    override fun keyCompare(key1: String, key2: String): Int {
+        //hashtableSdsKeyCompare
+        TODO("Not yet implemented")
+    }
+
+    override fun resizeAllowed(moreMem: size_t, usedRatio: Double): Int {
+        //hashtableResizeAllowed
+        TODO("Not yet implemented")
+    }
+
+    override fun entryDestructor(entry: Entry) {
+        //hashtableObjectDestructor
+        TODO("Not yet implemented")
+    }
+
+    override fun entryPrefetchValue(entry: Entry) {
+        //hashtableObjectPrefetchValue
+        TODO("Not yet implemented")
+    }
+
+    override fun rehashingStarted(ht: Hashtable) {
+        //kvstoreHashtableRehashingStarted
+        TODO("Not yet implemented")
+    }
+
+    override fun rehashingCompleted(ht: Hashtable) {
+        //kvstoreHashtableRehashingCompleted
+        TODO("Not yet implemented")
+    }
+
+    override fun trackMemUsage(ht: Hashtable, delta: ssize_t) {
+        //kvstoreHashtableTrackMemUsage
+        TODO("Not yet implemented")
+    }
+
+    override fun getMetadataSize(): size_t {
+        //kvstoreHashtableMetadataSize
+        TODO("Not yet implemented")
+    }
 }
