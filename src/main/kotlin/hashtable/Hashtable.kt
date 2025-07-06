@@ -36,9 +36,10 @@ abstract class Hashtable(
     var rehashIdx: ssize_t = -1,
     val tables: Array<Array<HashtableBucket?>> = arrayOf(emptyArray(), emptyArray()),
     val used: Array<size_t> = arrayOf(0u, 0u),
-    val bucketExp: Array<int8_t> = arrayOf(0, 0),
-    //val pauseRehash: int16_t,
-    //val pauseAutoShrink: int16_t,
+    val bucketExp: Array<int8_t> = arrayOf(-1, -1),
+    val childBuckets: Array<size_t> = arrayOf(0u, 0u),
+    var pauseRehash: int16_t = 0,
+    var pauseAutoShrink: int16_t = 0,
     //val childBuckets: Array<size_t> = arrayOf(0u, 0u),
     //val metadata: Metadata,
     // From hashtableType
@@ -52,8 +53,9 @@ abstract class Hashtable(
 
     fun resetTable(tableIdx: Int) {
         tables[tableIdx] = emptyArray()
-        bucketExp[tableIdx] = -1
         used[tableIdx] = 0u
+        bucketExp[tableIdx] = -1
+        childBuckets[tableIdx] = 0u
     }
 
     fun size(): size_t {
@@ -138,10 +140,6 @@ abstract class Hashtable(
     open fun rehashingCompleted() {
         // Do nothing
     }
-
-    open fun trackMemUsage(delta: ssize_t) {
-        // Do nothing
-    }
 }
 
 class KVStoreKeysHashtable : Hashtable() {
@@ -182,11 +180,6 @@ class KVStoreKeysHashtable : Hashtable() {
 
     override fun rehashingCompleted() {
         //kvstoreHashtableRehashingCompleted
-        TODO("Not yet implemented")
-    }
-
-    override fun trackMemUsage(delta: ssize_t) {
-        //kvstoreHashtableTrackMemUsage
         TODO("Not yet implemented")
     }
 
