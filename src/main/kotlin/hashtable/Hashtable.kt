@@ -131,15 +131,15 @@ abstract class Hashtable(
         // Do nothing
     }
 
-    open fun rehashingStarted(ht: Hashtable) {
+    open fun rehashingStarted() {
         // Do nothing
     }
 
-    open fun rehashingCompleted(ht: Hashtable) {
+    open fun rehashingCompleted() {
         // Do nothing
     }
 
-    open fun trackMemUsage(ht: Hashtable, delta: ssize_t) {
+    open fun trackMemUsage(delta: ssize_t) {
         // Do nothing
     }
 }
@@ -175,17 +175,17 @@ class KVStoreKeysHashtable : Hashtable() {
         TODO("Not yet implemented")
     }
 
-    override fun rehashingStarted(ht: Hashtable) {
+    override fun rehashingStarted() {
         //kvstoreHashtableRehashingStarted
         TODO("Not yet implemented")
     }
 
-    override fun rehashingCompleted(ht: Hashtable) {
+    override fun rehashingCompleted() {
         //kvstoreHashtableRehashingCompleted
         TODO("Not yet implemented")
     }
 
-    override fun trackMemUsage(ht: Hashtable, delta: ssize_t) {
+    override fun trackMemUsage(delta: ssize_t) {
         //kvstoreHashtableTrackMemUsage
         TODO("Not yet implemented")
     }
