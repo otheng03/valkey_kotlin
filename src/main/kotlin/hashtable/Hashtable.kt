@@ -81,9 +81,9 @@ abstract class Hashtable(
         return Pair(null, false)
     }
 
-    fun findBucket(hash: ULong, key: String): Pair<HashtableBucket?, Int>? {
+    fun findBucket(hash: ULong, key: String): Pair</*pos in bucket*/ Int, HashtableBucket?>? {
         if (size() == 0uL)
-            return Pair(null, 0)
+            return Pair(0, null)
         val h2 = hash.highBits()
         var table: Int
 
@@ -125,7 +125,35 @@ abstract class Hashtable(
 
     fun addOrFind(entry: Entry): Pair</*success*/ Boolean, /*existing entry*/ Entry?> {
         val key = entryGetKey(entry)
-        return Pair(false, null)
+        val hash = hashKey(key)
+        val ret = findBucket(hash, key)
+        val posInBucket = ret?.let { ret.first } ?: 0
+        val hashTable = ret?.second
+        return hashTable?.let {
+            Pair(false, hashTable.entries[posInBucket])
+        } ?: run {
+            insert(hash, entry)
+            Pair(true, entry)
+        }
+    }
+
+    fun insert(hash: ULong, entry: Entry?) {
+        expandIfNeeded()
+        rehashStepOrWriteifNeeded()
+        val bucket = findBucketForInsert(hash)
+        TODO("Not yet implemented")
+    }
+
+    fun expandIfNeeded() {
+        TODO("Not yet implemented")
+    }
+
+    fun rehashStepOrWriteifNeeded() {
+        TODO("Not yet implemented")
+    }
+
+    fun findBucketForInsert(hash: ULong): Pair</*pos in bucket*/ Int, /*table index*/ Int> {
+        return Pair(0, 0)
     }
 
     abstract fun entryGetKey(entry: Entry): String
