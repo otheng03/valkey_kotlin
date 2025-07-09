@@ -32,6 +32,10 @@ fun ULong.highBits(): UByte {
     return (this shr (CHAR_BIT * 7)).toUByte()
 }
 
+data class Entry(
+    val key: String
+)
+
 abstract class Hashtable(
     var rehashIdx: ssize_t = -1,
     val tables: Array<Array<HashtableBucket?>> = arrayOf(emptyArray(), emptyArray()),
@@ -119,6 +123,11 @@ abstract class Hashtable(
         return if (exp == -1) 0L else 1L shl exp
     }
 
+    fun addOrFind(entry: Entry): Pair</*success*/ Boolean, /*existing entry*/ Entry?> {
+        val key = entryGetKey(entry)
+        return Pair(false, null)
+    }
+
     abstract fun entryGetKey(entry: Entry): String
     abstract fun hashFunction(key: String): uint64_t
     abstract fun keyCompare(key1: String, key2: String): Int
@@ -144,8 +153,7 @@ abstract class Hashtable(
 
 class KVStoreKeysHashtable : Hashtable() {
     override fun entryGetKey(entry: Entry): String {
-        //hashtableObjectGetKey
-        TODO("Not yet implemented")
+        return entry.key
     }
 
     override fun hashFunction(key: String): uint64_t {
