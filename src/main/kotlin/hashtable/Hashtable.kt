@@ -38,7 +38,7 @@ data class Entry(
 
 abstract class Hashtable(
     var rehashIdx: ssize_t = -1,
-    val tables: Array<Array<HashtableBucket?>> = arrayOf(emptyArray(), emptyArray()),
+    val tables: Array<Array<HashtableBucket>> = arrayOf(emptyArray(), emptyArray()),
     val used: Array<size_t> = arrayOf(0u, 0u),
     val bucketExp: Array<int8_t> = arrayOf(-1, -1),
     val childBuckets: Array<size_t> = arrayOf(0u, 0u),
@@ -93,7 +93,7 @@ abstract class Hashtable(
             if (used[table] == 0uL)
                 continue
 
-            val mask: Long = expToMask(bucketExp[table].toInt())
+            val mask: size_t = expToMask(bucketExp[table].toInt())
             val bucketIdx = hash and mask.toULong() // TODO: Check type safety of toULong
             if (table == 0 && rehashIdx >= 0 && bucketIdx < rehashIdx.toUInt()) {   // TODO: Check type safety of toUInt
                 continue
@@ -115,12 +115,16 @@ abstract class Hashtable(
         return ENTRIES_PER_BUCKET - (if (hashtableBucket?.chained == true) 1 else 0)
     }
 
-    fun expToMask(exp: Int): Long {
-        return if (exp == -1) 0 else numBuckets(exp) - 1
+    fun expToMask(exp: Int): size_t {
+        return (if (exp == -1) 0 else (numBuckets(exp) - 1)) as size_t
     }
 
     fun numBuckets(exp: Int): Long {
         return if (exp == -1) 0L else 1L shl exp
+    }
+
+    fun isRehashing(): Boolean {
+        return rehashIdx != -1L
     }
 
     fun addOrFind(entry: Entry): Pair</*success*/ Boolean, /*existing entry*/ Entry?> {
@@ -153,6 +157,13 @@ abstract class Hashtable(
     }
 
     fun findBucketForInsert(hash: ULong): Pair</*pos in bucket*/ Int, /*table index*/ Int> {
+        val table = if (isRehashing()) 1 else 0
+        val mask = expToMask(table)
+        val bucketIdx: Int = (hash and mask).toInt()
+        val b = tables[table][bucketIdx]
+        while (b.isFull()) {
+
+        }
         return Pair(0, 0)
     }
 

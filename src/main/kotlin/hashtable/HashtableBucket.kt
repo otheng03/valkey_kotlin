@@ -64,4 +64,12 @@ data class HashtableBucket (
         result = 31 * result + entries.contentHashCode()
         return result
     }
+
+    fun numBucketPositions(): Int {
+        return ENTRIES_PER_BUCKET - (if (chained) 1 else 0)
+    }
+
+    fun isFull(): Boolean {
+        return presence.toInt() == ((1 shl numBucketPositions()) - 1)
+    }
 }
