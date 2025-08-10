@@ -1,6 +1,11 @@
 package valkey.kotlin.hashtable
 
+import valkey.kotlin.hashtable.HashtableConstants.BUCKET_DIVISOR
+import valkey.kotlin.hashtable.HashtableConstants.BUCKET_FACTOR
+import valkey.kotlin.hashtable.HashtableConstants.MAX_FILL_PERCENT_HARD
+import valkey.kotlin.hashtable.HashtableConstants.MAX_FILL_PERCENT_SOFT
 import valkey.kotlin.types.*
+import kotlin.math.min
 
 /* --- Global Constants --- */
 
@@ -42,6 +47,7 @@ abstract class Hashtable(
     val used: Array<size_t> = arrayOf(0u, 0u),
     val bucketExp: Array<int8_t> = arrayOf(-1, -1),
     val childBuckets: Array<size_t> = arrayOf(0u, 0u),
+    var resizePolicy: HashtableResizePolicy = HashtableResizePolicy.ALLOW,
     var pauseRehash: int16_t = 0,
     var pauseAutoShrink: int16_t = 0,
     //val childBuckets: Array<size_t> = arrayOf(0u, 0u),
@@ -67,7 +73,6 @@ abstract class Hashtable(
     }
 
     open fun hashKey(key: String): ULong {
-        // TODO : Use siphash
         return key.hashCode().toULong()
     }
 
@@ -116,17 +121,18 @@ abstract class Hashtable(
     }
 
     fun expToMask(exp: Int): size_t {
-        return (if (exp == -1) 0 else (numBuckets(exp) - 1)) as size_t
+        return (if (exp == -1) 0 else (numBuckets(exp) - 1uL)) as size_t
     }
 
-    fun numBuckets(exp: Int): Long {
-        return if (exp == -1) 0L else 1L shl exp
+    fun numBuckets(exp: Int): size_t {
+        return if (exp == -1) 0uL else 1uL shl exp
     }
 
     fun isRehashing(): Boolean {
         return rehashIdx != -1L
     }
 
+    // Adds an entry and returns 1 on success. Returns 0 if there was already an entry with the same key.
     fun addOrFind(entry: Entry): Pair</*success*/ Boolean, /*existing entry*/ Entry?> {
         val key = entryGetKey(entry)
         val hash = hashKey(key)
@@ -148,8 +154,108 @@ abstract class Hashtable(
         TODO("Not yet implemented")
     }
 
-    fun expandIfNeeded() {
-        TODO("Not yet implemented")
+    fun expandIfNeeded(): Int {
+        val minCapacity = used[0] + used[1] + 1uL
+        val tableIndex = if (isRehashing()) 1 else 0
+        val numBuckets = numBuckets(bucketExp[tableIndex].toInt())
+        val currentCapacity = numBuckets * ENTRIES_PER_BUCKET.toULong()
+        val maxFillPercent = if (resizePolicy == HashtableResizePolicy.ALLOW) MAX_FILL_PERCENT_SOFT else MAX_FILL_PERCENT_HARD
+
+        if (minCapacity * 100uL <= currentCapacity * maxFillPercent) {
+            return 0
+        }
+
+        return resize(minCapacity, null)
+    }
+
+    // Helper function based on the C code
+    private fun nextBucketExp(minCapacity: size_t): Int {
+        if (minCapacity == 0uL) return -1
+
+        // ceil(x / y) = floor((x - 1) / y) + 1
+        val minBuckets = (minCapacity * BUCKET_FACTOR.toULong() - 1uL) / BUCKET_DIVISOR.toULong() + 1uL
+        if (minBuckets >= ULong.MAX_VALUE / 2uL) return (ULong.SIZE_BITS - 1)
+        if (minBuckets == 1uL) return 0
+
+        // Find the position of the highest set bit (equivalent to __builtin_clzl)
+        val leadingZeros = (minBuckets - 1uL).countLeadingZeroBits()
+        return ULong.SIZE_BITS - leadingZeros
+    }
+
+    fun resize(minCapacity: size_t, policy: HashtableResizePolicy?): Int {
+        // Adjust minimum size. We don't resize to zero currently.
+        val adjustedMinCapacity = if (minCapacity == 0uL) 1uL else minCapacity
+
+        // Size of new table.
+        val exp = nextBucketExp(adjustedMinCapacity)
+        val numBuckets = numBuckets(exp)
+        val newCapacity = numBuckets * ENTRIES_PER_BUCKET.toULong()
+
+        if (newCapacity < adjustedMinCapacity || numBuckets * HASHTABLE_BUCKET_SIZE.toULong() < numBuckets) {
+            // Overflow
+            return 0
+        }
+
+        val oldExp = bucketExp[if (isRehashing()) 1 else 0]
+
+        if (exp == oldExp.toInt()) {
+            // Can't resize to same size.
+            return 0
+        }
+
+        // We can't resize if rehashing is already ongoing. Fast-forward ongoing
+        // rehashing before we continue. This can happen only in exceptional
+        // scenarios, such as when many insertions are made while rehashing is
+        // paused.
+        if (isRehashing()) {
+            if (pauseRehash > 0) return 0
+            while (isRehashing()) {
+                rehashStep()
+            }
+        }
+
+        val effectivePolicy = policy ?: resizePolicy
+
+        if (effectivePolicy == HashtableResizePolicy.FORBID && tables[0].isNotEmpty()) {
+            // Refuse to resize if resizing is forbidden and we already have a primary table.
+            return 0
+        }
+
+        if (exp > oldExp) {
+            // If we're growing the table, let's check if the resizeAllowed callback allows the resize.
+            val fillFactor = adjustedMinCapacity.toDouble() / (numBuckets(oldExp.toInt()).toDouble() * ENTRIES_PER_BUCKET)
+            if (fillFactor * 100 < MAX_FILL_PERCENT_HARD.toDouble() && resizeAllowed(numBuckets * HASHTABLE_BUCKET_SIZE.toULong(), fillFactor) == 0) {
+                // Resize callback says no.
+                return 0
+            }
+        }
+
+        // Allocate the new hash table.
+        val newTable = Array<HashtableBucket>(numBuckets.toInt()) { HashtableBucket(chained = false, presence = 0u) }
+
+        bucketExp[1] = exp.toByte()
+        tables[1] = newTable
+        used[1] = 0u
+        rehashIdx = 0
+
+        rehashingStarted()
+
+        // If the old table was empty, the rehashing is completed immediately.
+        if (tables[0].isEmpty() || (used[0] == 0uL && childBuckets[0] == 0uL)) {
+            rehashingCompleted()
+        } else if (instantRehashing != 0u) {
+            while (isRehashing()) {
+                rehashStep()
+            }
+        }
+
+        return 1
+    }
+
+    private fun rehashStep() {
+        // Implementation for rehashing a single step would go here
+        // This is a complex operation that moves entries from old table to new table
+        TODO("rehashStep implementation needed")
     }
 
     fun rehashStepOrWriteifNeeded() {

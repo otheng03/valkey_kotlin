@@ -1,6 +1,7 @@
 package hashtable
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import valkey.kotlin.hashtable.Entry
 import valkey.kotlin.hashtable.KVStoreKeysHashtable
 import kotlin.test.Test
@@ -11,9 +12,9 @@ class HashtableTest {
         val hashtable = KVStoreKeysHashtable()
 
         val entry = Entry("testkey")
-        hashtable.addOrFind(entry)
+        val (success, exisingEntry) = hashtable.addOrFind(entry)
 
-        val expected = true
-        assertEquals(expected, true)
+        assertEquals(true, success)
+        assertNull(exisingEntry)
     }
 }
