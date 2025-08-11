@@ -252,6 +252,18 @@ abstract class Hashtable(
         return 1
     }
 
+    private fun rehashBucket(b: HashtableBucket) {
+        var pos: Int
+        for (pos in 0 until numBucketPositions(b)) {
+            if (b.isPositionFilled(pos))
+                continue
+
+            val entry = b.entries[pos]
+            val h2: uint8_t = b.hashes[pos]
+        }
+
+    }
+
     private fun rehashStep() {
         // Implementation for rehashing a single step would go here
         // This is a complex operation that moves entries from old table to new table

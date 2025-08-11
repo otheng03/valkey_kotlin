@@ -1,6 +1,7 @@
 package valkey.kotlin.types
 
 typealias int8_t = Byte
+typealias uint8_t = UByte
 typealias int16_t = Short
 typealias int32_t = Int
 typealias int64_t = Long
