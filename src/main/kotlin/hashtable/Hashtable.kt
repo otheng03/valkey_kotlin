@@ -258,10 +258,28 @@ abstract class Hashtable(
             if (b.isPositionFilled(pos))
                 continue
 
-            val entry = b.entries[pos]
+            val entry = b.entries[pos]!!
             val h2: uint8_t = b.hashes[pos]
+            val hash: uint64_t
+            // When shrinking, it's possible to avoid computing the hash.
+            // We can just use idx has the hash.
+            if (bucketExp[1] < bucketExp[0]) {
+                hash = rehashIdx.toULong()
+            } else {
+                hash = hashEntry(entry)
+            }
+            val (dst, posInDstBucket) = findBucketForInsert(hash)
+            val dstBucket = if (isRehashing()) tables[1][dst] else tables[0][dst]
+            dstBucket.entries[posInDstBucket] = entry
+            dstBucket.hashes[posInDstBucket] = h2
+            dstBucket.presence = dstBucket.presence or (1 shl posInDstBucket).toUByte()
+            used[0]--
+            used[1]++
         }
+    }
 
+    private fun hashEntry(entry: Entry): uint64_t {
+        return hashKey(entryGetKey(entry))
     }
 
     private fun rehashStep() {
@@ -274,6 +292,7 @@ abstract class Hashtable(
         TODO("Not yet implemented")
     }
 
+    // TODO : Change the return type to (HashtableBucket?, Int)
     fun findBucketForInsert(hash: ULong): Pair</*pos in bucket*/ Int, /*table index*/ Int> {
         val table = if (isRehashing()) 1 else 0
         val mask = expToMask(table)

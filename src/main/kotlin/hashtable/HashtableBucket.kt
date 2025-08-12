@@ -35,7 +35,7 @@ const val BITS_NEEDED_TO_STORE_POS_WITHIN_BUCKET = 3
 
 data class HashtableBucket (
     val chained: Boolean,
-    val presence: UByte,
+    var presence: UByte,
     val hashes: Array<UByte> = arrayOf(0u, 0u, 0u, 0u, 0u, 0u, 0u),
     val entries: Array<Entry?> = arrayOfNulls(ENTRIES_PER_BUCKET)
 ) {
