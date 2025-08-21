@@ -92,28 +92,41 @@ abstract class Hashtable(
         val h2 = hash.highBits()
         var table: Int
 
-        // TODO: this.rehashStepOnReadIfNeeded()
+        rehashStepOrWriteifNeeded()
 
-        for (table in 0..1) {
-            if (used[table] == 0uL)
+        for (tableIdx in 0..1) {
+            if (used[tableIdx] == 0uL)
                 continue
 
-            val mask: size_t = expToMask(bucketExp[table].toInt())
+            val mask: size_t = expToMask(bucketExp[tableIdx].toInt())
             val bucketIdx = hash and mask.toULong() // TODO: Check type safety of toULong
-            if (table == 0 && rehashIdx >= 0 && bucketIdx < rehashIdx.toUInt()) {   // TODO: Check type safety of toUInt
+            if (tableIdx == 0 && rehashIdx >= 0 && bucketIdx < rehashIdx.toUInt()) {   // TODO: Check type safety of toUInt
                 continue
             }
-            val bucket = tables[table].get(bucketIdx.toInt())   // TODO: Check type safety of toInt
+            var bucket: HashtableBucket? = tables[tableIdx].get(bucketIdx.toInt())   // TODO: Check type safety of toInt
             do {
                 // Find candidate entries with presence flag set and matching h2 hash.
                 for (pos in 0..numBucketPositions(bucket)) {
                     if (bucket?.isPositionFilled(pos) == true && bucket.hashes[pos] == h2) {
+                        checkCandidateInBucket(bucket, pos, key, tableIdx)
                     }
                 }
+                bucket = bucket?.getChildBucket()
             } while (bucket != null)
         }
-        // TODO
         return null
+    }
+
+    private fun checkCandidateInBucket(bucket: HashtableBucket, pos: Int, key: String, tableIdx: Int): Triple<Int, Int, Int> {
+        val entry = bucket.entries[pos] as Entry
+        val elemKey = entry.key
+        val posInBucket: Int
+        if (key.equals(elemKey)) {
+            // TODO: if (!validateElementIfNeeded(entry))
+            posInBucket = pos
+            return Triple(1, posInBucket, tableIdx)
+        }
+        return Triple(0, 0, 0)
     }
 
     fun numBucketPositions(hashtableBucket: HashtableBucket?): Int {
