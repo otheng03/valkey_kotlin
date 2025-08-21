@@ -34,10 +34,10 @@ typealias BUCKET_BITS_TYPE  = UByte
 const val BITS_NEEDED_TO_STORE_POS_WITHIN_BUCKET = 3
 
 data class HashtableBucket (
-    val chained: Boolean,
+    var chained: Boolean,
     var presence: UByte,
     val hashes: Array<UByte> = arrayOf(0u, 0u, 0u, 0u, 0u, 0u, 0u),
-    val entries: Array<Entry?> = arrayOfNulls(ENTRIES_PER_BUCKET)
+    val entries: Array<Any?> = arrayOfNulls(ENTRIES_PER_BUCKET)
 ) {
     fun isPositionFilled(position: Int): Boolean {
         return presence and ((1 shl position).toUByte()) > 0u
@@ -71,5 +71,22 @@ data class HashtableBucket (
 
     fun isFull(): Boolean {
         return presence.toInt() == ((1 shl numBucketPositions()) - 1)
+    }
+
+    fun getChildBucket(): HashtableBucket? {
+        return (if (chained) entries[ENTRIES_PER_BUCKET - 1] else null) as HashtableBucket?;
+    }
+
+    fun convertToUnchained() {
+        assert(chained)
+        chained = false
+        assert(!isPositionFilled(ENTRIES_PER_BUCKET - 1))
+    }
+
+    fun moveEntryTo(posFrom: Int, bucketTo: HashtableBucket, posTo: Int) {
+        bucketTo.entries[posTo] = entries[posFrom]
+        bucketTo.hashes[posTo] = hashes[posFrom]
+        bucketTo.presence = presence or (1 shl posTo).toUByte()
+        presence = presence and (1 shl posFrom).inv().toUByte()
     }
 }

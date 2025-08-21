@@ -133,7 +133,7 @@ abstract class Hashtable(
     }
 
     // Adds an entry and returns 1 on success. Returns 0 if there was already an entry with the same key.
-    fun addOrFind(entry: Entry): Pair</*success*/ Boolean, /*existing entry*/ Entry?> {
+    fun addOrFind(entry: Entry): Pair</*success*/ Boolean, /*existing entry*/ Any?> {
         val key = entryGetKey(entry)
         val hash = hashKey(key)
         val ret = findBucket(hash, key)
@@ -266,7 +266,7 @@ abstract class Hashtable(
             if (bucketExp[1] < bucketExp[0]) {
                 hash = rehashIdx.toULong()
             } else {
-                hash = hashEntry(entry)
+                hash = hashEntry(entry as Entry)
             }
             val (dst, posInDstBucket) = findBucketForInsert(hash)
             val dstBucket = if (isRehashing()) tables[1][dst] else tables[0][dst]
@@ -280,6 +280,19 @@ abstract class Hashtable(
 
     private fun hashEntry(entry: Entry): uint64_t {
         return hashKey(entryGetKey(entry))
+    }
+
+    private fun pruneLastBucket(beforeLast: HashtableBucket, last: HashtableBucket, tableIndex: Int) {
+        assert(beforeLast.chained && beforeLast.getChildBucket() == last)
+        assert(!last.chained)
+        assert(last.presence == 0.toUByte() || last.presence.countOneBits() == 1)
+        beforeLast.convertToUnchained()
+        if (last.presence != 0.toUByte()) {
+            val posInLast: Int = last.presence.countTrailingZeroBits()
+            beforeLast.moveEntryTo(ENTRIES_PER_BUCKET - 1, last, posInLast)
+        }
+        // free(last)
+        childBuckets[tableIndex]--
     }
 
     private fun rehashStep() {
