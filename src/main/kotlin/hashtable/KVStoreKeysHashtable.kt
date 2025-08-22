@@ -1,6 +1,18 @@
 package valkey.kotlin.hashtable
 
+import valkey.kotlin.database.KVStore
+import valkey.kotlin.list.ListNode
 import valkey.kotlin.types.*
+
+
+/**
+ * kvstoreHashtableMetadata is a small per-hashtable auxiliary record the kvstore layer attaches
+ * to each underlying hashtable instance. It carries two key pieces of information:
+ */
+class KVStoreHashtableMetadata<T> (
+    var rehashingNode: ListNode<T>?,
+    var kvs: KVStore?
+)
 
 class KVStoreKeysHashtable : Hashtable() {
     override fun entryGetKey(entry: Entry): String {
