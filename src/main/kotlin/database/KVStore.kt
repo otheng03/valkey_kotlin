@@ -9,10 +9,11 @@ const val KVSTORE_FREE_EMPTY_HASHTABLES = (1 shl 1)
 
 class KVStore (
     val hashtable: Array<Hashtable> = emptyArray(),
-    val numHashtables: Int,
-    val numHashtablesBits: Int,
-    val rehashing: List<Any?>,
-    val hashTableSizeIndex: ULong?
+    val numHashtables: Int = 0,
+    val numHashtablesBits: Int = 0,
+    val rehashing: List<Any?> = listOf(),
+    val hashTableSizeIndex: Array<ULong> = emptyArray(),
+
     /*
     int flags;
     hashtableType *dtype;
@@ -33,14 +34,8 @@ class KVStore (
 ) {
     companion object Factory {
         fun create(): KVStore{
-            val numHashtables = 1
             // Do not support cluster mode
-            return KVStore(
-                arrayOf(KVStoreKeysHashtable()),
-                numHashtables ,
-                0,
-                listOf(),
-                null)
+            return KVStore()
         }
     }
 

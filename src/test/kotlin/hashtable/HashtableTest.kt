@@ -10,13 +10,7 @@ import kotlin.test.Test
 class HashtableTest {
     @Test
     fun addKey() {
-        val kvs = KVStore(
-            hashtable = TODO(),
-            numHashtables = TODO(),
-            numHashtablesBits = TODO(),
-            rehashing = TODO(),
-            hashTableSizeIndex = TODO()
-        )
+        val kvs = KVStore()
         val hashtable = KVStoreKeysHashtable(kvs = kvs)
 
         val entry = Entry("testkey")
