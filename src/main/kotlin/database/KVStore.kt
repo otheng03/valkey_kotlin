@@ -8,7 +8,7 @@ const val KVSTORE_ALLOCATE_HASHTABLES_ON_DEMAND = (1 shl 0)
 const val KVSTORE_FREE_EMPTY_HASHTABLES = (1 shl 1)
 
 class KVStore (
-    val hashtable: Array<Hashtable>,
+    val hashtable: Array<Hashtable> = emptyArray(),
     val numHashtables: Int,
     val numHashtablesBits: Int,
     val rehashing: List<Any?>,
