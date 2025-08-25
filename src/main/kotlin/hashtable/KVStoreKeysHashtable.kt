@@ -1,7 +1,7 @@
 package valkey.kotlin.hashtable
 
 import valkey.kotlin.database.KVStore
-import valkey.kotlin.list.ListNode
+import valkey.kotlin.list.VKListNode
 import valkey.kotlin.types.*
 
 
@@ -10,10 +10,14 @@ import valkey.kotlin.types.*
  * to each underlying hashtable instance. It carries two key pieces of information:
  */
 class KVStoreHashtableMetadata(
-    var rehashingNode: ListNode<Any>,
-    var kvs: KVStore)
+    var rehashingNode: VKListNode<Any?>?,
+    var kvs: KVStore
+)
 
-class KVStoreKeysHashtable(val kvs: KVStore) : Hashtable() {
+class KVStoreKeysHashtable(
+    val kvs: KVStore,
+    val metadata: KVStoreHashtableMetadata
+) : Hashtable() {
     override fun entryGetKey(entry: Entry): String {
         return entry.key
     }
@@ -43,9 +47,14 @@ class KVStoreKeysHashtable(val kvs: KVStore) : Hashtable() {
         TODO("Not yet implemented")
     }
 
+    // kvstoreHashtableRehashingStarted is the C implementation of this function
     override fun rehashingStarted() {
-        //kvstoreHashtableRehashingStarted
-        TODO("Not yet implemented")
+        kvs.rehashing.addNodeTail(this)
+        metadata.rehashingNode = kvs.rehashing.tail!!
+
+        val (from, to) = rehashingInfo()
+        kvs.bucketCount += to
+        kvs.overheadHashtableRehashing += from * HASHTABLE_BUCKET_SIZE
     }
 
     override fun rehashingCompleted() {

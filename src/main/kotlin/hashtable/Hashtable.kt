@@ -9,7 +9,7 @@ import valkey.kotlin.types.*
 /* --- Global Constants --- */
 
 // bytes, the most common cache line size
-const val HASHTABLE_BUCKET_SIZE = 64
+const val HASHTABLE_BUCKET_SIZE: UInt = 64u
 
 // Scan flags
 const val HASHTABLE_SCAN_EMIT_REF = 1 shl 0
@@ -327,6 +327,10 @@ abstract class Hashtable(
 
         }
         return Pair(0, 0)
+    }
+
+    fun rehashingInfo(): Pair</*fromSize*/ size_t, /*toSize*/ size_t> {
+        return Pair(numBuckets(bucketExp[0].toInt()), numBuckets(bucketExp[1].toInt()))
     }
 
     abstract fun entryGetKey(entry: Entry): String

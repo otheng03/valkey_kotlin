@@ -1,8 +1,8 @@
 package valkey.kotlin.database
 
 import valkey.kotlin.hashtable.Hashtable
-import valkey.kotlin.hashtable.KVStoreKeysHashtable
-import kotlin.arrayOf
+import valkey.kotlin.list.VKList
+import valkey.kotlin.types.size_t
 
 const val KVSTORE_ALLOCATE_HASHTABLES_ON_DEMAND = (1 shl 0)
 const val KVSTORE_FREE_EMPTY_HASHTABLES = (1 shl 1)
@@ -11,8 +11,10 @@ class KVStore (
     val hashtable: Array<Hashtable> = emptyArray(),
     val numHashtables: Int = 0,
     val numHashtablesBits: Int = 0,
-    val rehashing: List<Any?> = listOf(),
+    val rehashing: VKList<Any?> = VKList(),
     val hashTableSizeIndex: Array<ULong> = emptyArray(),
+    var bucketCount: ULong = 0u,
+    var overheadHashtableRehashing: size_t = 0u      /* Overhead of hash tables rehashing in bytes. */
 
     /*
     int flags;
