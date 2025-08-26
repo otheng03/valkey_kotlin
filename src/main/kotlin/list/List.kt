@@ -35,4 +35,26 @@ class VKList<T>(
         }
         len++
     }
+
+    fun unlinkNode(node: VKListNode<T>) {
+        assert(len > 0)
+
+        if (node.prev != null) {
+            node.prev!!.next = node.next
+        } else {
+            head = node.next
+        }
+
+        if (node.next != null) {
+            node.next!!.prev = node.prev
+        } else {
+            tail = node.prev
+        }
+
+        node.next = null
+        node.prev = null
+
+        len--
+    }
+
 }

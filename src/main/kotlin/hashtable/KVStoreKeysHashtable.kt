@@ -47,7 +47,6 @@ class KVStoreKeysHashtable(
         TODO("Not yet implemented")
     }
 
-    // kvstoreHashtableRehashingStarted is the C implementation of this function
     override fun rehashingStarted() {
         kvs.rehashing.addNodeTail(this)
         metadata.rehashingNode = kvs.rehashing.tail!!
@@ -58,8 +57,14 @@ class KVStoreKeysHashtable(
     }
 
     override fun rehashingCompleted() {
-        //kvstoreHashtableRehashingCompleted
-        TODO("Not yet implemented")
+        metadata.rehashingNode.let {
+            kvs.rehashing.unlinkNode(metadata.rehashingNode!!)
+            metadata.rehashingNode = null
+        }
+
+        val (from, to) = rehashingInfo()
+        kvs.bucketCount -= from
+        kvs.overheadHashtableRehashing -= from * HASHTABLE_BUCKET_SIZE
     }
 
     override fun getMetadataSize(): size_t {
