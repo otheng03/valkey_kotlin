@@ -39,6 +39,12 @@ data class HashtableBucket (
     val hashes: Array<UByte> = arrayOf(0u, 0u, 0u, 0u, 0u, 0u, 0u),
     val entries: Array<Any?> = arrayOfNulls(ENTRIES_PER_BUCKET)
 ) {
+    companion object Factory {
+        fun create(): HashtableBucket {
+            return HashtableBucket(false, 0u)
+        }
+    }
+
     fun isPositionFilled(position: Int): Boolean {
         return presence and ((1 shl position).toUByte()) > 0u
     }

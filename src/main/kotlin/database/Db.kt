@@ -1,6 +1,7 @@
 package valkey.kotlin.database
 
 import valkey.kotlin.hasFlag
+import valkey.kotlin.hashtable.KVStoreKeysHashtable
 import java.util.EnumSet
 
 /* The actual Object */
@@ -48,7 +49,7 @@ data class ServerObject (
  * Database representation. There is only one database for simplicity of this toy project.
  */
 class ServerDb (
-    val keys: KVStore
+    val keys: KVStore<KVStoreKeysHashtable>
     /*
     kvstore *keys;                        /* The keyspace for this DB */
     kvstore *expires;                     /* Timeout of keys with a timeout set */

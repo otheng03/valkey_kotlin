@@ -42,7 +42,7 @@ data class Entry(
 
 abstract class Hashtable(
     var rehashIdx: ssize_t = -1,
-    val tables: Array<Array<HashtableBucket>> = arrayOf(emptyArray(), emptyArray()),
+    val tables: Array<Array<HashtableBucket>> = arrayOf(arrayOf(HashtableBucket.create()), arrayOf(HashtableBucket.create())),
     val used: Array<size_t> = arrayOf(0u, 0u),
     val bucketExp: Array<int8_t> = arrayOf(-1, -1),
     val childBuckets: Array<size_t> = arrayOf(0u, 0u),
@@ -91,7 +91,7 @@ abstract class Hashtable(
         val h2 = hash.highBits()
         var table: Int
 
-        rehashStepOrWriteifNeeded()
+        rehashStepOnWriteIfNeeded()
 
         for (tableIdx in 0..1) {
             if (used[tableIdx] == 0uL)
@@ -161,7 +161,7 @@ abstract class Hashtable(
 
     fun insert(hash: ULong, entry: Entry?) {
         expandIfNeeded()
-        rehashStepOrWriteifNeeded()
+        rehashStepOnWriteIfNeeded()
         val bucket = findBucketForInsert(hash)
         TODO("Not yet implemented")
     }
@@ -308,13 +308,31 @@ abstract class Hashtable(
     }
 
     private fun rehashStep() {
-        // Implementation for rehashing a single step would go here
-        // This is a complex operation that moves entries from old table to new table
-        TODO("rehashStep implementation needed")
+        assert(isRehashing())
+        var b: HashtableBucket? = tables[0][rehashIdx.toInt()]
+        rehashBucket(b!!)
+        if (b.chained) {
+            var next = b.getChildBucket()
+            b.chained = false
+            b = next
+            while (b != null) {
+                rehashBucket(b)
+                next = b.getChildBucket()
+                childBuckets[0]--
+                b = next
+            }
+        }
+
+        rehashIdx++
+        if (rehashIdx >= numBuckets(bucketExp[0].toInt()).toLong()) {
+            rehashingCompleted()
+        }
     }
 
-    fun rehashStepOrWriteifNeeded() {
-        TODO("Not yet implemented")
+    fun rehashStepOnWriteIfNeeded() {
+        if (!isRehashing() || pauseRehash > 0) return
+        if (resizePolicy != HashtableResizePolicy.AVOID) return
+        rehashStep()
     }
 
     // TODO : Change the return type to (HashtableBucket?, Int)
@@ -353,5 +371,14 @@ abstract class Hashtable(
 
     open fun rehashingCompleted() {
         // Do nothing
+    }
+
+    fun _rehashingCompleted() {
+        bucketExp[0] = bucketExp[1]
+        tables[0] = tables[1]
+        used[0] = used[1]
+        childBuckets[0] = childBuckets[1]
+        resetTable(1)
+        rehashIdx = -1
     }
 }

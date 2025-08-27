@@ -11,13 +11,19 @@ import valkey.kotlin.types.*
  */
 class KVStoreHashtableMetadata(
     var rehashingNode: VKListNode<Any?>?,
-    var kvs: KVStore
+    var kvs: KVStore<KVStoreKeysHashtable>
 )
 
 class KVStoreKeysHashtable(
-    val kvs: KVStore,
+    val kvs: KVStore<KVStoreKeysHashtable>,
     val metadata: KVStoreHashtableMetadata
 ) : Hashtable() {
+    companion object Factory {
+        fun create(kvs: KVStore<KVStoreKeysHashtable>): KVStoreKeysHashtable {
+            return KVStoreKeysHashtable(kvs, KVStoreHashtableMetadata(null, kvs))
+        }
+    }
+
     override fun entryGetKey(entry: Entry): String {
         return entry.key
     }
@@ -65,6 +71,8 @@ class KVStoreKeysHashtable(
         val (from, to) = rehashingInfo()
         kvs.bucketCount -= from
         kvs.overheadHashtableRehashing -= from * HASHTABLE_BUCKET_SIZE
+
+        _rehashingCompleted()
     }
 
     override fun getMetadataSize(): size_t {
