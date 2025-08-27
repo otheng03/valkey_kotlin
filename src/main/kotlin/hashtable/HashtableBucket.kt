@@ -83,6 +83,16 @@ data class HashtableBucket (
         return (if (chained) entries[ENTRIES_PER_BUCKET - 1] else null) as HashtableBucket?;
     }
 
+    fun convertToChained() {
+        assert(!chained)
+        val pos = ENTRIES_PER_BUCKET - 1
+        assert(isPositionFilled(pos))
+        val child = HashtableBucket.create()
+        moveEntryTo(pos, child, 0)
+        chained = true
+        entries[pos] = child
+    }
+
     fun convertToUnchained() {
         assert(chained)
         chained = false

@@ -162,8 +162,11 @@ abstract class Hashtable(
     fun insert(hash: ULong, entry: Entry?) {
         expandIfNeeded()
         rehashStepOnWriteIfNeeded()
-        val bucket = findBucketForInsert(hash)
-        TODO("Not yet implemented")
+        val (b, posInBucket, tableIndex) = findBucketForInsert(hash)
+        b.entries[posInBucket] = entry
+        b.presence = b.presence or (1 shl posInBucket).toUByte()
+        b.hashes[posInBucket] = hash.highBits()
+        used[tableIndex]++
     }
 
     fun expandIfNeeded(): Int {
@@ -280,11 +283,10 @@ abstract class Hashtable(
             } else {
                 hash = hashEntry(entry as Entry)
             }
-            val (dst, posInDstBucket) = findBucketForInsert(hash)
-            val dstBucket = if (isRehashing()) tables[1][dst] else tables[0][dst]
-            dstBucket.entries[posInDstBucket] = entry
-            dstBucket.hashes[posInDstBucket] = h2
-            dstBucket.presence = dstBucket.presence or (1 shl posInDstBucket).toUByte()
+            val (dst, posInDstBucket, _) = findBucketForInsert(hash)
+            dst.entries[posInDstBucket] = entry
+            dst.hashes[posInDstBucket] = h2
+            dst.presence = dst.presence or (1 shl posInDstBucket).toUByte()
             used[0]--
             used[1]++
         }
@@ -335,16 +337,20 @@ abstract class Hashtable(
         rehashStep()
     }
 
-    // TODO : Change the return type to (HashtableBucket?, Int)
-    fun findBucketForInsert(hash: ULong): Pair</*pos in bucket*/ Int, /*table index*/ Int> {
+    fun findBucketForInsert(hash: ULong): Triple<HashtableBucket, Int, Int> {
         val table = if (isRehashing()) 1 else 0
         val mask = expToMask(table)
         val bucketIdx: Int = (hash and mask).toInt()
-        val b = tables[table][bucketIdx]
-        while (b.isFull()) {
-
+        var b : HashtableBucket = tables[table][bucketIdx]
+        while (b!!.isFull()) {
+            if (!b.chained) {
+                b.convertToChained()
+                childBuckets[table]++
+            }
+            b = b.getChildBucket()!!
         }
-        return Pair(0, 0)
+        val pos = (0 until ENTRIES_PER_BUCKET).firstOrNull { !b.isPositionFilled(it) } ?: 0
+        return Triple(b, pos, table)
     }
 
     fun rehashingInfo(): Pair</*fromSize*/ size_t, /*toSize*/ size_t> {
