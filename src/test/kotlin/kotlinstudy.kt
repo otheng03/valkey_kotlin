@@ -48,9 +48,7 @@ class KotlinStudyTest {
     fun exception1() {
         val percentage = 1000
         if (percentage !in 0..100) {
-            throw IllegalArgumentException(
-                "A percentage value must be between 0 and 100: $percentage"
-            )
+            println("A percentage value must be between 0 and 100: $percentage")
         }
     }
 

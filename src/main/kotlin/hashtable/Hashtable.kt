@@ -85,9 +85,11 @@ abstract class Hashtable(
         return Pair(null, false)
     }
 
-    fun findBucket(hash: ULong, key: String): Pair</*pos in bucket*/ Int, HashtableBucket?>? {
+    data class FindBucketResult(val posInBucket: Int, val tableIdx: Int, val bucket: HashtableBucket?)
+
+    fun findBucket(hash: ULong, key: String): FindBucketResult? {
         if (size() == 0uL)
-            return Pair(0, null)
+            return FindBucketResult(0, 0, null)
         val h2 = hash.highBits()
         var table: Int
 
@@ -107,7 +109,10 @@ abstract class Hashtable(
                 // Find candidate entries with presence flag set and matching h2 hash.
                 for (pos in 0..numBucketPositions(bucket)) {
                     if (bucket?.isPositionFilled(pos) == true && bucket.hashes[pos] == h2) {
-                        checkCandidateInBucket(bucket, pos, key, tableIdx)
+                        val (ret, posInBucket, tableIdx) = checkCandidateInBucket(bucket, pos, key, tableIdx)
+                        if (ret == 1) {
+                            return FindBucketResult(posInBucket, tableIdx, bucket)
+                        }
                     }
                 }
                 bucket = bucket?.getChildBucket()
@@ -144,13 +149,17 @@ abstract class Hashtable(
         return rehashIdx != -1L
     }
 
+    fun isRehashingPaused(): Boolean {
+        return pauseRehash > 0
+    }
+
     // Adds an entry and returns 1 on success. Returns 0 if there was already an entry with the same key.
     fun addOrFind(entry: Entry): Pair</*success*/ Boolean, /*existing entry*/ Any?> {
         val key = entryGetKey(entry)
         val hash = hashKey(key)
         val ret = findBucket(hash, key)
-        val posInBucket = ret?.let { ret.first } ?: 0
-        val hashTable = ret?.second
+        val posInBucket = ret?.let { ret.posInBucket } ?: 0
+        val hashTable = ret?.bucket
         return hashTable?.let {
             Pair(false, hashTable.entries[posInBucket])
         } ?: run {
@@ -386,5 +395,53 @@ abstract class Hashtable(
         childBuckets[0] = childBuckets[1]
         resetTable(1)
         rehashIdx = -1
+    }
+
+    fun pop(key: String): Pair<Boolean, Any?> {
+        if (size() == 0uL)
+            return Pair(false, null)
+        val hash = hashKey(key)
+        val result = findBucket(hash, key)
+        if (result != null) {
+            val pooped = result.bucket!!.entries[result.posInBucket]
+            result.bucket.presence = result.bucket.presence and (1 shl result.posInBucket).inv().toUByte()
+            used[result.tableIdx]--
+            if (result.bucket.chained && !isRehashingPaused()) {
+                fillBucketHole(result.bucket, result.posInBucket, result.tableIdx)
+            }
+            shrinkIfNeeded()
+            return Pair(true, pooped)
+        } else {
+            return Pair(false, null)
+        }
+    }
+
+    fun shrinkIfNeeded() {
+        // Do nothing
+        //TODO("Not yet implemented")
+    }
+
+    fun fillBucketHole(b: HashtableBucket, posInBucket: Int, tableIdx: Int) {
+        assert(b.chained && !b.isPositionFilled(posInBucket))
+        var beforeLast = b
+        var last = b.getChildBucket()
+        while (last!!.chained) {
+            beforeLast = last
+            last = last.getChildBucket()!!
+        }
+        if (last.presence != 0u.toUByte()) {
+            // __builtin_ctz
+            val posInLast = last.presence.countLeadingZeroBits()
+            assert(posInLast < ENTRIES_PER_BUCKET && last.isPositionFilled(posInLast))
+            last.moveEntryTo(posInLast, b, posInBucket)
+        }
+        // __builtin_popcount
+        if (last.presence == 0u.toUByte() || last.presence.countOneBits() == 1) {
+            pruneLastBucket(beforeLast, last, tableIdx)
+        }
+    }
+
+    fun delete(key: String): Boolean {
+        return pop(key).first
     }
 }
