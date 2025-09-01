@@ -75,14 +75,16 @@ abstract class Hashtable(
         return key.hashCode().toULong()
     }
 
-    fun find(key: String): Pair<Hashtable?, /*found*/ Boolean> {
+    fun find(key: String): Any? {
         if (size() == 0uL)
-            return Pair(null, false)
+            return null
         val hash = hashKey(key)
-        val posInBucket = 0
-        val ret = findBucket(hash, key)
-        // TODO
-        return Pair(null, false)
+        val result = findBucket(hash, key)
+        if (result != null) {
+            return result.bucket!!.entries[result.posInBucket]
+        } else {
+            return null
+        }
     }
 
     data class FindBucketResult(val posInBucket: Int, val tableIdx: Int, val bucket: HashtableBucket?)

@@ -20,11 +20,6 @@ class KVStore<T : Hashtable> (
     fun kvstoreGetHashtable(dictIndex: Int): Hashtable? {
         return hashtable[dictIndex]
     }
-
-    fun kvstorehashtableFind(dictIndex: Int, key: String): Pair<Hashtable?, /*found*/ Boolean> {
-        val ht: Hashtable? = kvstoreGetHashtable(dictIndex)
-        return ht?.find(key) ?: Pair(null, false)
-    }
 }
 
 // Returns which dict index should be used with kvstore for a given key.
