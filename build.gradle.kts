@@ -1,6 +1,8 @@
+import org.jetbrains.kotlin.gradle.targets.js.npm.importedPackageDir
+
 plugins {
     application
-    kotlin("jvm") version "2.1.20"
+    kotlin("jvm") version "2.2.10"
 }
 
 group = "valkey.kotlin_kotlin"
@@ -13,6 +15,7 @@ repositories {
 
 dependencies {
     implementation("com.github.ajalt.clikt:clikt:5.0.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     testImplementation(kotlin("test"))
 }
 

@@ -1,8 +1,10 @@
 package study
 
+import kotlinx.coroutines.*
 import java.io.BufferedReader
 import java.io.StringReader
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 interface Expr
 
@@ -74,5 +76,44 @@ class KotlinStudyTest {
         val view: View = Button()
         view.showOff()
         // I'm a view!
+    }
+
+    private var zeroTime = System.currentTimeMillis()
+    fun log(message: Any?) =
+        println("${System.currentTimeMillis() - zeroTime} " +
+                "[${Thread.currentThread().name}] $message")
+
+    suspend fun doSomethingSlowly() {
+        delay(500.milliseconds)
+        println("I'm done")
+    }
+
+    @Test
+    fun coroutine() {
+        /**
+         * A coroutine is an instance of a suspendable computation.
+         * You can think of it as a block of code that can be executed concurrently (or even in parallel) with other
+         * coroutines, Similar to a thread.
+         * These coroutines contain the required machinery to suspend execution of the functions called in their body.
+         * To create such a coroutine, you use one of the coroutine builder functions. There are a number of functions available.
+         * - `runBlocking` is designed for bridging the world of blocking code and suspending functions.
+         * - `launch` is used for starting new coroutines that don't return any values.
+         *   - It is typically used for "start-and-forget" scenarios.
+         * - `async` is for computing values in an asynchronous manner.
+         */
+        runBlocking {
+            doSomethingSlowly()
+
+            log("The first, parent, coroutine starts")
+            launch {
+                log("The second coroutine starts and is ready to be suspended")
+                delay(100.milliseconds)
+                log("The second coroutine is resumed")
+            }
+            launch {
+                log("The third coroutine can run in the meantime")
+            }
+            log("The first coroutine has launched two more coroutines")
+        }
     }
 }
