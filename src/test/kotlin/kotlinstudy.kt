@@ -89,7 +89,7 @@ class KotlinStudyTest {
     }
 
     @Test
-    fun coroutine() {
+    fun coroutineLaunch() {
         /**
          * A coroutine is an instance of a suspendable computation.
          * You can think of it as a block of code that can be executed concurrently (or even in parallel) with other
@@ -115,5 +115,52 @@ class KotlinStudyTest {
             }
             log("The first coroutine has launched two more coroutines")
         }
+        /**
+         * If you run this example with the `-Dkotlinx.coroutines.debug` JVM option,
+         * you get information about the coroutine name next to the thread name.
+         * e.g.
+         *   550 [Test worker @coroutine#1] The first, parent, coroutine starts
+         *   579 [Test worker @coroutine#1] The first coroutine has launched two more coroutines
+         *   579 [Test worker @coroutine#2] The second coroutine starts and is ready to be suspended
+         *   579 [Test worker @coroutine#3] The third coroutine can run in the meantime
+         *   229417 [Test worker @coroutine#2] The second coroutine is resumed
+         *
+         * Q. Where do suspended coroutines go?
+         * A. The code of suspending functions is transformed at compile time so that when a coroutine is suspended,
+         *    information about its state at the time of suspension is stored in memory.
+         * Q. How can I run my coroutines in parallel on multiple threads??
+         * A. Use a multithreaded dispatcher, somethine we'll discuss in section 14.7.
+         */
+    }
+
+    suspend fun slowlyAddNumbers(a: Int, b: Int): Int {
+        log("Waitint a bit before calculating $a + $b")
+        delay(100.milliseconds * a)
+        return a + b
+    }
+
+    @Test
+    fun coroutineAsync() {
+        runBlocking{
+            log("Starting the async computation")
+            val myFirstDeferred = async {
+                slowlyAddNumbers(2, 2) + slowlyAddNumbers(3,3)
+            }
+            val mySecondDeferred = async { slowlyAddNumbers(10, 10) }
+            log("Waiting for the deferred value to be available")
+            log("The first result: ${myFirstDeferred.await()}")
+            log("The second result: ${mySecondDeferred.await()}")
+        }
+        /**
+         * In Kotlin, you only use async when you want to concurrently execute independent tasks and wait for their results.
+         * If you don't need to start multiple tasks at once and then wait for their results,
+         * you don't have to use async--plain suspending function calls suffice.
+         *
+         * Depending on your use case, you can pick one of the available coroutine builders.
+         * Builder / Return value / Used for
+         * runBlocking / Value calculated by lambda / Bridging blocking and non-blocking code
+         * launch / Job / Start-and-forget tasks (that have side effects)
+         * async / Deferred<T> / Calculating a value asynchronously (which can be awaited)
+         */
     }
 }
