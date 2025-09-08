@@ -1,10 +1,13 @@
 package study
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.BufferedReader
 import java.io.StringReader
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 interface Expr
 
@@ -161,6 +164,51 @@ class KotlinStudyTest {
          * runBlocking / Value calculated by lambda / Bridging blocking and non-blocking code
          * launch / Job / Start-and-forget tasks (that have side effects)
          * async / Deferred<T> / Calculating a value asynchronously (which can be awaited)
+         */
+    }
+
+    @Test
+    fun coroutineDispatchers1() {
+        /**
+         * The dispatcher for a coroutine determines what thread(s) the coroutine uses for its execution.
+         * By choosing a dispatcher, you can confine the execution of a coroutine to a specific thread
+         * or dispatch it to a thread pool, allowing you to decide whether the coroutine should run on
+         * a specific thread or number of threads.
+         * Inherently, coroutines aren't bound to any particular thread; it's okay for a coroutine to suspend
+         * its execution in one thread and resume its execution in another, as dictated by the dispatcher.
+         */
+        runBlocking {
+            log("Doing some work")
+            launch(Dispatchers.Default) {
+                log("Doing some background work")
+            }
+        }
+    }
+
+    @Test
+    fun coroutineDispatchers2() {
+        runBlocking {
+            val mutex = Mutex()
+            launch() {
+                var x = 0
+                repeat(10_000) {
+                    launch(Dispatchers.Default) {
+                        mutex.withLock {
+                            x++
+                        }
+                    }
+                }
+                delay(1.seconds)
+                println(x)
+            }
+        }
+        /**
+         * Dispatcher / Number of threads / Used for
+         * Dispatchers.Default / Number of CPU cores / General-purpose operations, CPU-bound operations
+         * Dispatchers.Main / One / UI-bound logic("UI thread"), only when in the context of a UI framework
+         * Dispatchers.IO / Up to 64 threads(auto-scaling) or number of CPU cores (whichever is larger) / Offloading blocking IO tasks
+         * Dispatchers.Unconfined / Whatever thread / Advanced cases where immediate scheduling is required (non-general-purpose)
+         * limitedParallelism(n) / Custom(n) / Custom scenarios
          */
     }
 }
