@@ -17,6 +17,8 @@ dependencies {
     implementation("com.github.ajalt.clikt:clikt:5.0.1")
     implementation("io.netty:netty-transport:4.2.5.Final")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("io.ktor:ktor-server-core:3.2.3")
+    implementation("io.ktor:ktor-server-netty:3.2.3")
     testImplementation(kotlin("test"))
 }
 

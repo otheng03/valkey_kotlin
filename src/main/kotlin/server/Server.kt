@@ -1,7 +1,23 @@
 package valkey.kotlin.server
 
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import io.netty.channel.nio.NioIoHandler
-import kotlinx.coroutines.runBlocking
+
+fun Application.module() {
+    configureRouting()
+}
+
+fun Application.configureRouting() {
+    routing {
+        get("/") {
+            call.respondText("Hwllo, World!")
+        }
+    }
+}
 
 object Server {
     var configFile: String? = null
@@ -9,7 +25,12 @@ object Server {
     var save: String = ""
     val bossGroup = NioIoHandler.newFactory()
 
-    fun start() = runBlocking {
-
+    fun start() {
+        embeddedServer(
+            Netty,
+            port = port,
+            host = "0.0.0.0",
+            module = Application::module
+        ).start(wait = true)
     }
 }

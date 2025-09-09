@@ -15,5 +15,6 @@ class Valkey : CliktCommand() {
             Server.configFile = it
             loadServerConfigFromFile(it)
         }
+        Server.start()
     }
 }
