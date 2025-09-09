@@ -13,10 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
-fun Application.module() {
-    configureRouting()
-}
-
 fun Application.configureRouting() {
     routing {
         get("/") {
