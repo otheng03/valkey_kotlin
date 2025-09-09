@@ -5,6 +5,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.BufferedReader
 import java.io.StringReader
+import kotlin.coroutines.coroutineContext
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -203,6 +204,7 @@ class KotlinStudyTest {
             }
         }
         /**
+         * Coroutines inherit their dispatcher from their parent by default.
          * Dispatcher / Number of threads / Used for
          * Dispatchers.Default / Number of CPU cores / General-purpose operations, CPU-bound operations
          * Dispatchers.Main / One / UI-bound logic("UI thread"), only when in the context of a UI framework
@@ -210,5 +212,27 @@ class KotlinStudyTest {
          * Dispatchers.Unconfined / Whatever thread / Advanced cases where immediate scheduling is required (non-general-purpose)
          * limitedParallelism(n) / Custom(n) / Custom scenarios
          */
+    }
+
+    suspend fun introspect() {
+        log(coroutineContext)
+    }
+
+    @Test
+    fun coroutineContext1() {
+        /**
+         * You can inspect the current coroutine context by accessing a special preperty called coroutineContext
+         * inside any suspending function.
+         * This property isn't actually defined in Kotlin code; it's a compiler intrinsic, meaning its actual
+         * implementation is handled as a special case by the Kotlin compiler.
+         */
+        runBlocking {
+            introspect()
+            // 16 [Test worker @coroutine#1] [CoroutineId(1), "coroutine#1":BlockingCoroutine{Active}@5cdec700, BlockingEventLoop@6d026701]
+        }
+        runBlocking(Dispatchers.IO + CoroutineName("Coolcoroutine")) {
+            introspect()
+            // 22 [DefaultDispatcher-worker-1 @Coolcoroutine#2] [CoroutineName(Coolcoroutine), CoroutineId(2), "Coolcoroutine#2":BlockingCoroutine{Active}@10bbbee4, Dispatchers.IO]
+        }
     }
 }
