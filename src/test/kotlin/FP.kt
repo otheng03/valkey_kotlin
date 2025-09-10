@@ -6,9 +6,6 @@ import kotlin.test.assertEquals
 
 typealias Par<A> = (CoroutineScope) -> Deferred<A>
 fun <A> unit(a: A): Par<A> = { CompletableDeferred(a) }
-fun <A> fork(pa: Par<A>): Par<A> = { scope ->
-    scope.async { pa(scope).await() }
-}
 
 fun <A> List<A>.splitAt(pivot: Int): Pair<List<A>, List<A>> =
     this.subList(0, pivot) to this.subList(pivot, this.size)
