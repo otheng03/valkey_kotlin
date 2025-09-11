@@ -1,12 +1,15 @@
 package study
 
+import io.netty.buffer.ByteBufUtil.isAccessible
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.BufferedReader
 import java.io.StringReader
+import java.lang.reflect.Constructor
 import kotlin.coroutines.coroutineContext
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -236,31 +239,53 @@ class KotlinStudyTest {
         }
     }
 
+    /**
+     * In Kotlin, objects allow you to define a class and create an instance of it in a single step.
+     * This is useful when you need either a reusable singleton instance or a one-time object.
+     * To handle these scenarios, Kotlin provides two key approaches:
+     * - object declarations for creating singletons
+     * - object expressions for creating anonymous, one-time objects.
+     */
     object MyObject
 
+    /**
+     * Data objects
+     * When printing a plain object declaration in Kotlin, the string representation contains
+     * both its name and the hash of the object: object MyObject
+     */
     data object MyDataObject {
         val number: Int = 3
     }
 
+    data object MySingleton
+
+    fun createInstanceViaReflection(): MySingleton {
+        return (MySingleton.javaClass.declaredConstructors[0].apply { isAccessible = true } as Constructor<MySingleton>).newInstance()
+    }
+
     @Test
     fun objectStudy() {
-        /**
-         * In Kotlin, objects allow you to define a class and create an instance of it in a single step.
-         * This is useful when you need either a reusable singleton instance or a one-time object.
-         * To handle these scenarios, Kotlin provides two key approaches:
-         * - object declarations for creating singletons
-         * - object expressions for creating anonymous, one-time objects.
-         */
-
-        /**
-         * Data objects
-         * When printing a plain object declaration in Kotlin, the string representation contains
-         * both its name and the hash of the object: object MyObject
-         */
         println(MyObject)
         // MyObject@hashcode
 
         println(MyDataObject)
         // MyDataObject
+
+        val evilTwin = createInstanceViaReflection()
+        println("$MySingleton, $evilTwin")
+        assertEquals(MySingleton, evilTwin)
     }
+
+    /**
+     * Differences between data objects and data classes
+     * There are some functions taht are not generated for a data object:
+     * - No copy() function. Because a data object declaration is intended to be used as singletons.
+     * - No componentN() function. Unlike a data class, a data object does not have any data properties.
+     */
+
+    /**
+     * Sealed classes and interfaces provide controlled inheritance of your class hierarchies.
+     * All direct subclasses of a sealed class are known at compile time.
+     * No other subclasses may appear outside the module and package within which the sealed class is defined.
+     */
 }
