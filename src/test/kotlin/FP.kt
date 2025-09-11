@@ -250,7 +250,34 @@ class FPTest {
         }
         DepositCash(repository)(userId, 100.toBigDecimal())
         println("repository: $repository")
+    }
 
+    @Test
+    fun passingTrailinglambdas() {
+        val items = listOf(1, 2, 3)
+
+        /**
+         * Passing trailing lambdas
+         * According to Kotlin convention, if the last parameter of a function is a function,
+         * then a lambda expression passed as the corresponding argument can be placed outside the parentheses:
+         */
+        val product = items.fold(1) { acc, e -> acc * e }
+        assertEquals(6, product)
+
+        /**
+         * Such syntax is also known as trailing lambda.
+         * If the lambda is the only argument in that call, the parentheses can be omitted entirely:
+         */
+        run { println("...") }
+
+        /**
+         * it: implicit name of a single parameter
+         * It's very common for a lambda expression to have only one parameter.
+         * If the compiler can parse the signature without any parameters,
+         * the parameter does not need to be declared and -> can be omitted.
+         * The parameter will be implicitly declared under the name it:
+         */
+        assertEquals(listOf(3), items.filter { it > 2 })
     }
 
 }

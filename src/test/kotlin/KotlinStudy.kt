@@ -235,4 +235,32 @@ class KotlinStudyTest {
             // 22 [DefaultDispatcher-worker-1 @Coolcoroutine#2] [CoroutineName(Coolcoroutine), CoroutineId(2), "Coolcoroutine#2":BlockingCoroutine{Active}@10bbbee4, Dispatchers.IO]
         }
     }
+
+    object MyObject
+
+    data object MyDataObject {
+        val number: Int = 3
+    }
+
+    @Test
+    fun objectStudy() {
+        /**
+         * In Kotlin, objects allow you to define a class and create an instance of it in a single step.
+         * This is useful when you need either a reusable singleton instance or a one-time object.
+         * To handle these scenarios, Kotlin provides two key approaches:
+         * - object declarations for creating singletons
+         * - object expressions for creating anonymous, one-time objects.
+         */
+
+        /**
+         * Data objects
+         * When printing a plain object declaration in Kotlin, the string representation contains
+         * both its name and the hash of the object: object MyObject
+         */
+        println(MyObject)
+        // MyObject@hashcode
+
+        println(MyDataObject)
+        // MyDataObject
+    }
 }
