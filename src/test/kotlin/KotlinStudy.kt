@@ -288,4 +288,23 @@ class KotlinStudyTest {
      * All direct subclasses of a sealed class are known at compile time.
      * No other subclasses may appear outside the module and package within which the sealed class is defined.
      */
+
+    @Test
+    fun structuredConcurrency() {
+        runBlocking { // this: CoroutineScope
+            launch { // this: CoroutineScope
+                delay(1.seconds)
+                launch {
+                    delay(250.milliseconds)
+                    log("Grandchild done")
+                }
+                log("Child 1 done!")
+            }
+            launch {
+                delay(500.milliseconds)
+                log("Child 2 done!")
+            }
+            log("Parent done!")
+        }
+    }
 }
