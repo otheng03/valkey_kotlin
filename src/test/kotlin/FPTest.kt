@@ -31,8 +31,8 @@ class FPTest {
     }
 
     interface Monoid<A> {
-        fun combine(a1: A, a2: A): A
-        val nil: A
+        fun combine(a1: A, a2: A): A    // Associative binary operation
+        val nil: A                      // An identity element
     }
 
     object StringMonoid : Monoid<String> {
