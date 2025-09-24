@@ -170,3 +170,53 @@ void syncCommand(client *c) {
 
 ## Summary
 - syncCommand enforces safe conditions, negotiates PSYNC vs full sync, and orchestrates BGSAVE attachment or initiation. On success, the replica either gets a partial resync acceptance (handled in the PSYNC helper), or a full resync kickoff signaled by +FULLRESYNC <replid> <offset>, possibly preceded by +DUALCHANNELSYNC if using a dedicated RDB channel.
+
+# PSYNC
+
+⏺ PSYNC is Valkey's (formerly Redis) Partial Synchronization protocol used for efficient replication between primary and replica servers.
+
+Key Concepts
+
+PSYNC allows replicas to reconnect to a primary and continue replication from where they left off, rather than requiring a full resynchronization. This dramatically
+reduces network bandwidth and improves failover times.
+
+How PSYNC Works
+
+1. Command Format
+
+PSYNC <replication-id> <offset>
+- replication-id: Unique identifier of the primary server's dataset
+- offset: Last replication offset the replica processed
+
+2. Possible Responses
+
+The primary can respond with:
+
+- +CONTINUE: Partial sync possible - replica can continue from current offset
+- +FULLRESYNC <replid> <offset>: Full sync required - new replication ID and starting offset provided
+- +DUALCHANNELSYNC: Full sync via dedicated RDB channel (dual-channel replication)
+- -NOMASTERLINK: Primary can't sync (not connected to its own primary or during failover)
+
+3. Implementation Details
+
+Primary side (syncCommand in replication.c:1043):
+- Validates replica capabilities and connection state
+- Attempts partial resynchronization via primaryTryPartialResynchronization()
+- Falls back to full sync if partial sync fails
+
+Replica side (replicaSendPsyncCommand in replication.c:3255):
+- Sends PSYNC with cached primary's replication ID and offset
+- If no cached primary exists, sends PSYNC ? -1 to force full sync
+
+4. Replication Backlog
+
+PSYNC relies on the primary maintaining a replication backlog - a circular buffer that stores recent commands. If the replica's offset is still within this buffer,
+partial sync is possible.
+
+5. Special Cases
+
+- First connection: Replica sends PSYNC ? -1
+- Failover: Can include FAILOVER parameter for coordinated failover
+- Dual-channel: Modern enhancement using separate RDB channel for full syncs
+
+PSYNC significantly improves replication reliability by avoiding expensive full synchronizations when brief disconnections occur.
