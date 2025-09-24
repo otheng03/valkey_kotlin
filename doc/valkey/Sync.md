@@ -220,3 +220,111 @@ partial sync is possible.
 - Dual-channel: Modern enhancement using separate RDB channel for full syncs
 
 PSYNC significantly improves replication reliability by avoiding expensive full synchronizations when brief disconnections occur.
+
+# PSYNC Code Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant R as Replica
+    participant P as Primary
+    participant RB as Replication Backlog
+
+    Note over R,P: PSYNC Flow in Valkey
+
+    R->>R: replicaSendPsyncCommand()<br/>replication.c:3255
+
+    alt Has cached primary
+        Note over R: Use cached replid + offset
+        R->>P: PSYNC <replid> <offset>
+    else No cached primary
+        Note over R: Force full sync
+        R->>P: PSYNC ? -1
+    end
+
+    P->>P: syncCommand()<br/>replication.c:1043
+
+    P->>P: Validate client state<br/>- Not already replica<br/>- No pending replies<br/>- Not in failover
+
+    alt PSYNC command
+        P->>P: primaryTryPartialResynchronization()
+        P->>RB: Check if offset in backlog
+
+        alt Partial sync possible
+            RB-->>P: Offset found in backlog
+            P->>R: +CONTINUE
+            P->>R: Stream commands from offset
+            Note over R,P: Partial Sync Success
+        else Partial sync failed
+            RB-->>P: Offset too old/not found
+            alt Dual channel capable
+                P->>R: +DUALCHANNELSYNC
+                Note over R,P: Full sync via RDB channel
+            else Standard full sync
+                P->>R: +FULLRESYNC <new_replid> <offset>
+                P->>P: Setup full resync
+                Note over R,P: Full Sync Required
+            end
+        end
+    else Old SYNC command
+        Note over P: Legacy protocol
+        P->>P: Set pre_psync flag
+        P->>P: Force full resync
+    end
+
+    Note over R: replicaProcessPsyncReply()<br/>replication.c:3321
+
+    alt Received +CONTINUE
+        R->>R: Continue incremental sync
+    else Received +FULLRESYNC
+        R->>R: Start full sync process
+    else Received +DUALCHANNELSYNC
+        R->>R: Initialize dual-channel sync
+    else Error/Timeout
+        R->>R: Retry later
+    end
+```
+
+## Key Code Paths
+
+### Replica Side Flow
+```
+replicaSendPsyncCommand() [replication.c:3255]
+├── Check if dual-channel state active
+├── Use cached primary info OR send PSYNC ? -1
+├── Send PSYNC command to primary
+└── Return PSYNC_WAIT_REPLY
+
+replicaProcessPsyncReply() [replication.c:3321]
+├── Parse primary response
+├── Handle +CONTINUE → partial sync
+├── Handle +FULLRESYNC → full sync
+├── Handle +DUALCHANNELSYNC → dual-channel
+└── Handle errors/timeouts
+```
+
+### Primary Side Flow
+```
+syncCommand() [replication.c:1043]
+├── Validate replica connection state
+├── Check for failover coordination
+├── Handle PSYNC vs legacy SYNC
+├── Attempt primaryTryPartialResynchronization()
+│   ├── Check replication backlog
+│   ├── Verify offset is available
+│   └── Return success/failure
+├── On partial sync success → send +CONTINUE
+├── On partial sync failure → setup full resync
+│   ├── Check dual-channel capability
+│   ├── Send +DUALCHANNELSYNC OR +FULLRESYNC
+│   └── Initialize RDB transfer
+└── Update replication statistics
+```
+
+## Return Codes
+- `PSYNC_WAIT_REPLY` (0): Waiting for response
+- `PSYNC_WRITE_ERROR` (1): Network write failed
+- `PSYNC_CONTINUE` (2): Partial sync continues
+- `PSYNC_FULLRESYNC` (3): Full sync required
+- `PSYNC_NOT_SUPPORTED` (4): Primary doesn't support PSYNC
+- `PSYNC_TRY_LATER` (5): Temporary error, retry
+- `PSYNC_FULLRESYNC_DUAL_CHANNEL` (6): Full sync via RDB channel
