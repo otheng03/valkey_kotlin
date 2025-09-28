@@ -264,6 +264,238 @@ int open(const char *path, int flags) {
 
 This deep dive explains the fundamental mechanisms that Valkey's `moduleLoad` function leverages to provide its powerful dynamic extension capabilities.
 
+## Detailed Flow of moduleLoad Function
+
+### Complete Flow Diagram
+
+```
+moduleLoad(path, module_argv, module_argc, is_loadex)
+│
+├─ STEP 1: Input Validation & Setup
+│  ├─ Initialize variables: onload, handle
+│  └─ struct stat st for file info
+│
+├─ STEP 2: File Permission Check
+│  ├─ stat(path, &st) == 0?
+│  │  ├─ YES: Check execute permissions
+│  │  │  ├─ !(st.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))?
+│  │  │  │  ├─ YES: Log warning → return C_ERR
+│  │  │  │  └─ NO: Continue
+│  │  └─ NO: Continue (file may not exist yet)
+│
+├─ STEP 3: Configure dlopen Flags
+│  ├─ Base flags: RTLD_NOW | RTLD_LOCAL
+│  ├─ Platform check: (GLIBC || FreeBSD) && !ASAN && has dlfcn.h?
+│  │  ├─ YES: Add RTLD_DEEPBIND
+│  │  └─ NO: Use base flags only
+│
+├─ STEP 4: Dynamic Library Loading
+│  ├─ handle = dlopen(path, dlopen_flags)
+│  ├─ handle == NULL?
+│  │  ├─ YES: Log dlerror() → return C_ERR
+│  │  └─ NO: Continue
+│
+├─ STEP 5: Entry Point Resolution
+│  ├─ Search for symbols: ["ValkeyModule_OnLoad", "RedisModule_OnLoad"]
+│  ├─ Loop through symbol names:
+│  │  ├─ onload = dlsym(handle, symbol_name)
+│  │  ├─ onload != NULL?
+│  │  │  ├─ YES:
+│  │  │  │  ├─ if (i != 0): Log "Legacy Redis Module"
+│  │  │  │  └─ break
+│  │  │  └─ NO: Continue loop
+│  ├─ onload == NULL after loop?
+│  │  ├─ YES:
+│  │  │  ├─ dlclose(handle)
+│  │  │  ├─ Log "does not export OnLoad symbol"
+│  │  │  └─ return C_ERR
+│  │  └─ NO: Continue
+│
+├─ STEP 6: Module Context Creation
+│  ├─ ValkeyModuleCtx ctx
+│  ├─ moduleCreateContext(&ctx, NULL, VALKEYMODULE_CTX_TEMP_CLIENT)
+│
+├─ STEP 7: Module Initialization
+│  ├─ result = onload((void*)&ctx, module_argv, module_argc)
+│  ├─ result == VALKEYMODULE_ERR?
+│  │  ├─ YES: INITIALIZATION FAILURE PATH
+│  │  │  ├─ ctx.module != NULL?
+│  │  │  │  ├─ YES:
+│  │  │  │  │  ├─ Log "initialization failed"
+│  │  │  │  │  ├─ moduleUnregisterCleanup(ctx.module)
+│  │  │  │  │  ├─ moduleRemoveCateogires(ctx.module)
+│  │  │  │  │  └─ moduleFreeModuleStructure(ctx.module)
+│  │  │  │  └─ NO:
+│  │  │  │     └─ Log "Module name is busy"
+│  │  │  ├─ moduleFreeContext(&ctx)
+│  │  │  ├─ dlclose(handle)
+│  │  │  └─ return C_ERR
+│  │  └─ NO: Continue to SUCCESS PATH
+│
+├─ STEP 8: SUCCESS PATH - Module Registration
+│  ├─ dictAdd(modules, ctx.module->name, ctx.module)
+│  ├─ ctx.module->blocked_clients = 0
+│  ├─ ctx.module->handle = handle
+│
+├─ STEP 9: Store Load Metadata
+│  ├─ Allocate: ctx.module->loadmod = zmalloc(sizeof(moduleLoadQueueEntry))
+│  ├─ Store path: ctx.module->loadmod->path = sdsnew(path)
+│  ├─ Store argc: ctx.module->loadmod->argc = module_argc
+│  ├─ module_argc > 0?
+│  │  ├─ YES:
+│  │  │  ├─ Allocate argv: zmalloc(sizeof(robj*) * module_argc)
+│  │  │  └─ Copy args with reference counting:
+│  │  │     └─ for (i=0; i<module_argc; i++):
+│  │  │        ├─ ctx.module->loadmod->argv[i] = module_argv[i]
+│  │  │        └─ incrRefCount(module_argv[i])
+│  │  └─ NO: ctx.module->loadmod->argv = NULL
+│
+├─ STEP 10: ACL Integration
+│  ├─ ctx.module->num_commands_with_acl_categories > 0?
+│  │  ├─ YES: ACLRecomputeCommandBitsFromCommandRulesAllUsers()
+│  │  └─ NO: Skip
+│
+├─ STEP 11: Success Logging
+│  ├─ serverLog(LL_NOTICE, "Module '%s' loaded from %s", name, path)
+│  ├─ ctx.module->onload = 0
+│
+├─ STEP 12: Post-Load Configuration Validation
+│  ├─ int post_load_err = 0
+│  ├─ Configuration Check 1:
+│  │  ├─ listLength(ctx.module->module_configs) && !ctx.module->configs_initialized?
+│  │  │  ├─ YES:
+│  │  │  │  ├─ Log "missing LoadConfigs call"
+│  │  │  │  └─ post_load_err = 1
+│  │  │  └─ NO: Continue
+│  ├─ Configuration Check 2:
+│  │  ├─ is_loadex && dictSize(server.module_configs_queue)?
+│  │  │  ├─ YES:
+│  │  │  │  ├─ Log "Loadex configurations not applied"
+│  │  │  │  └─ post_load_err = 1
+│  │  │  └─ NO: Continue
+│  ├─ post_load_err == 1?
+│  │  ├─ YES: POST-LOAD FAILURE PATH
+│  │  │  ├─ moduleUnload(ctx.module->name, NULL)
+│  │  │  ├─ moduleFreeContext(&ctx)
+│  │  │  └─ return C_ERR
+│  │  └─ NO: Continue
+│
+├─ STEP 13: Event Notification
+│  ├─ moduleFireServerEvent(VALKEYMODULE_EVENT_MODULE_CHANGE,
+│  │                       VALKEYMODULE_SUBEVENT_MODULE_LOADED,
+│  │                       ctx.module)
+│
+├─ STEP 14: Cleanup and Success
+│  ├─ moduleFreeContext(&ctx)
+│  └─ return C_OK
+│
+└─ END
+```
+
+### Critical Decision Points
+
+#### 1. File Permission Validation (Step 2)
+- **Check**: Execute permissions on shared library file
+- **Failure Action**: Immediate return with C_ERR
+- **Security Impact**: Prevents loading of non-executable files
+
+#### 2. Dynamic Library Loading (Step 4)
+- **Check**: `dlopen()` success
+- **Failure Action**: Log `dlerror()` and return C_ERR
+- **Common Failures**: File not found, dependency missing, architecture mismatch
+
+#### 3. Entry Point Resolution (Step 5)
+- **Check**: Module exports `ValkeyModule_OnLoad` or `RedisModule_OnLoad`
+- **Failure Action**: `dlclose()` handle, log error, return C_ERR
+- **Compatibility**: Supports both Valkey and legacy Redis module formats
+
+#### 4. Module Initialization (Step 7)
+- **Check**: Module's `OnLoad` function returns success
+- **Failure Paths**:
+    - **With ctx.module**: Full cleanup including command unregistration
+    - **Without ctx.module**: Name collision detected
+- **Cleanup Actions**: Context cleanup, structure deallocation, `dlclose()`
+
+#### 5. Configuration Validation (Step 12)
+- **Check 1**: Modules with configs called `LoadConfigs`
+- **Check 2**: LOADEX configurations were processed
+- **Failure Action**: Call `moduleUnload()` for complete cleanup
+
+### Error Handling Paths
+
+#### Path A: Early Validation Failures
+```
+File Permission Error → Log Warning → return C_ERR
+dlopen() Failure → Log dlerror() → return C_ERR
+Missing OnLoad Symbol → dlclose() → Log Error → return C_ERR
+```
+
+#### Path B: Initialization Failure with Module Structure
+```
+OnLoad() returns VALKEYMODULE_ERR
+├─ ctx.module exists
+├─ moduleUnregisterCleanup(ctx.module)    // Remove commands, hooks
+├─ moduleRemoveCateogires(ctx.module)     // Remove ACL categories
+├─ moduleFreeModuleStructure(ctx.module)  // Free module memory
+├─ moduleFreeContext(&ctx)                // Free context
+├─ dlclose(handle)                        // Unload library
+└─ return C_ERR
+```
+
+#### Path C: Initialization Failure without Module Structure
+```
+OnLoad() returns VALKEYMODULE_ERR
+├─ ctx.module == NULL (ValkeyModule_Init failed)
+├─ Log "Module name is busy"
+├─ moduleFreeContext(&ctx)
+├─ dlclose(handle)
+└─ return C_ERR
+```
+
+#### Path D: Post-Load Configuration Failure
+```
+Configuration validation fails
+├─ moduleUnload(ctx.module->name, NULL)   // Complete unload process
+├─ moduleFreeContext(&ctx)                // Free context
+└─ return C_ERR
+```
+
+### Memory Management Throughout Flow
+
+#### Allocations During Success Path:
+1. **Module Structure**: Allocated during `ValkeyModule_Init` call
+2. **Load Metadata**: `zmalloc(sizeof(moduleLoadQueueEntry))`
+3. **Path Storage**: `sdsnew(path)`
+4. **Argument Array**: `zmalloc(sizeof(robj*) * module_argc)` if argc > 0
+5. **Argument Objects**: Reference count incremented for each
+
+#### Cleanup Responsibilities:
+- **Early Failures**: Minimal cleanup, mostly `dlclose()`
+- **Initialization Failures**: Context, partial module structure, library handle
+- **Post-Load Failures**: Complete module unload through `moduleUnload()`
+- **Success Path**: Only context cleanup, module remains registered
+
+### State Transitions
+
+```
+UNLOADED → LOADING → LOADED
+    ↑         ↓         ↓
+    └─────────┴─────────┘
+     (Any failure path)
+```
+
+**LOADING State Characteristics**:
+- Library handle open
+- Context created
+- Module structure may or may not exist
+- Not yet in global modules dictionary
+
+**LOADED State Characteristics**:
+- Registered in global modules dictionary
+- Commands available
+- Event handlers active
+- Load metadata stored for introspection
+
 ## Function Signature
 
 ```c
