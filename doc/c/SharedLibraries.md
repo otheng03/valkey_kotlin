@@ -15,11 +15,11 @@ int main() {
 }
 ```
 
-produces an object file that contains 
+produces an object file that contains
 - a text section with the machine code instructions of the program
 - a data section with the global variable x, and a “read-only” section with the string literal Hello World, x = %d\n.
 - a symbol table for all the identifiers that appear in the source code.
- 
+
 An easy way to view the symbol table is with the Unix command nm—for example,
 ```
 $ nm hello.o
@@ -73,7 +73,7 @@ aborts with an error when it encounters a redefined symbol
 Executable
 ┌────────────────────┐
 │ foo()              │                                Shared library (libc.so)
-│ ...                │      ┌────────────────────┐    ┌────────────────────┐   
+│ ...                │      ┌────────────────────┐    ┌────────────────────┐
 │ call malloc ---------------> malloc: jmp x -----------> malloc:          │
 │ ...                │      |                    │    └────────────────────┘
 │ call printf ---------------> printf: jmp ??? ----+  Dynamic linker (ld.so.1)
@@ -99,7 +99,7 @@ Executable
 4. **Loading Order**: Libraries load in link order, with dependencies added via breadth-first traversal
 5. **Optimization**: Uses cache file (`/etc/ld.so.cache`) to avoid slow directory searches
 6. **Fallback**: Manual search of system directories (`/lib`, `/usr/lib`) if cache lookup fails
- 
+
 # Dynamic loading
 
 **Dynamic Loading API:**
